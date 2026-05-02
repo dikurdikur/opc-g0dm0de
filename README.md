@@ -1,58 +1,125 @@
-# OpenClaw Plug & Play
+# ⚡ OpenClaw Plug & Play
 
-One-command setup for OpenClaw + Ollama. Clone, run, done.
+One-command setup for [OpenClaw](https://github.com/openclaw/openclaw) + [Ollama](https://ollama.com). From zero to running bot in minutes.
+
+[![Linux](https://img.shields.io/badge/Linux-✓-brightgreen?style=flat-square&logo=linux)](./linux)
+[![Windows](https://img.shields.io/badge/Windows-✓-blue?style=flat-square&logo=windows)](./windows)
+[![Docker](https://img.shields.io/badge/Docker-WIP-yellow?style=flat-square&logo=docker)](./docker)
+
+📖 **[Documentation Site](https://jlaiii.github.io/openclaw-plug-and-play)**
+
+---
 
 ## Quick Start
 
-### Linux
+### 🐧 Linux
+
 ```bash
-git clone https://github.com/yourname/openclaw-plug-and-play.git
+git clone https://github.com/jlaiii/openclaw-plug-and-play.git
 cd openclaw-plug-and-play/linux
 chmod +x install.sh
 ./install.sh
 ```
 
-### Windows (PowerShell Admin)
+**Supported:** Ubuntu 20.04+, Debian 11+, Fedora 35+, Arch, Manjaro
+
+### 🪟 Windows
+
 ```powershell
-git clone https://github.com/yourname/openclaw-plug-and-play.git
+git clone https://github.com/jlaiii/openclaw-plug-and-play.git
 cd openclaw-plug-and-play\windows
 .\install.ps1
 ```
 
-### Docker (Coming Soon)
-```bash
-docker compose up -d
-```
+**Requires:** Windows 10/11, PowerShell 5.1+ (Run as Administrator)
+
+---
 
 ## What It Does
 
-1. **Installs Ollama** — Downloads, installs, starts service
-2. **Pulls models** — Default: `kimi-k2.6:cloud` + catalog sync from ollama.com
-3. **Installs OpenClaw** — Node.js 22+, npm, openclaw global
-4. **Configures bots** — Discord + Telegram tokens, whitelists, permissions
-5. **Starts services** — Ollama + OpenClaw running
+1. **Detects OS** — Identifies distro/package manager
+2. **Installs dependencies** — Node.js 22+, git, curl (if missing)
+3. **Installs Ollama** — Official installer, starts service
+4. **Pulls default model** — `kimi-k2.6:cloud` with retry logic
+5. **Installs OpenClaw** — `npm install -g openclaw`
+6. **Configures workspace** — Creates `~/.openclaw/` with defaults
+7. **Prompts for tokens** — Discord, Telegram, admin ID (5 questions)
+8. **Sets security defaults** — DMs off, guild whitelist, admin-only
+9. **Prints setup guide** — Discord intents, invite URL, BotFather steps
 
-## Project Structure
+---
 
+## Security Defaults
+
+| Setting | Default | Why |
+|---------|---------|-----|
+| DMs | `false` | Prevents random users from DMing your bot |
+| Admin whitelist | Your Discord ID | Only you can interact until you add others |
+| Guild restriction | Open or specified | Optional: lock to specific servers |
+| Token storage | `.env` file | Auto-.gitignored, never committed |
+| Device auth | Disabled | `dangerouslyDisableDeviceAuth: true` for local use |
+
+---
+
+## After Install
+
+### 1. Set Your Tokens
+
+Edit `~/.openclaw/.env` (Linux) or `%USERPROFILE%\.openclaw\.env` (Windows):
+
+```env
+DISCORD_TOKEN=your_discord_bot_token
+TELEGRAM_TOKEN=your_telegram_bot_token
+ADMIN_DISCORD_ID=your_discord_user_id
 ```
-openclaw-plug-and-play/
-├── linux/          # Linux install scripts
-├── windows/        # Windows PowerShell scripts
-├── docker/         # Docker Compose setup (WIP)
-├── shared/         # Templates, configs, model catalog
-└── docs/           # Documentation
+
+### 2. Start OpenClaw
+
+```bash
+openclaw gateway start
 ```
 
-## Requirements
+### 3. Verify
 
-- **Linux:** Ubuntu 20.04+, Debian 11+, Fedora 35+, Arch
-- **Windows:** Windows 10/11, PowerShell 5.1+ (Admin)
-- **Docker:** Docker 20.10+, Docker Compose 2.0+
+```bash
+openclaw status
+ollama list
+```
+
+---
 
 ## Model Catalog
 
-Auto-syncs available models from [ollama.com/search?c=cloud](https://ollama.com/search?c=cloud).
+The installer syncs models from [ollama.com/search?c=cloud](https://ollama.com/search?c=cloud). Switch models by editing `~/.openclaw/config/gateway.yaml`:
 
-## License
+```yaml
+# Cloud models (no local GPU needed)
+model: ollama/kimi-k2.6:cloud
+model: ollama/qwen2.5:cloud
 
-MIT
+# Local models (requires GPU/CPU)
+model: ollama/llama3.2
+model: ollama/mistral
+model: ollama/phi4
+```
+
+---
+
+## Roadmap
+
+- [ ] Docker Compose deployment
+- [ ] Systemd auto-start service
+- [ ] TUI wizard (whiptail/dialog)
+- [ ] Auto-update script
+- [ ] Backup/restore config
+- [ ] Interactive model picker
+
+---
+
+## Contributing
+
+Open an issue or PR: [github.com/jlaiii/openclaw-plug-and-play](https://github.com/jlaiii/openclaw-plug-and-play)
+
+---
+
+Built by [@jlaiii](https://github.com/jlaiii) · Not affiliated with OpenClaw or Ollama
