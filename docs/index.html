@@ -377,8 +377,13 @@
                 </div>
                 <div class="feature">
                     <div class="feature-icon">🔒</div>
-                    <h4>Secure by Default</h4>
-                    <p>DMs disabled. Admin-only whitelist. Guild restrictions. Tokens never committed.</p>
+                    <h4>Whitelist Security</h4>
+                    <p>DMs enabled but restricted to whitelisted Discord IDs only. Groups open. Tokens never committed.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚙️</div>
+                    <h4>System-Level Control</h4>
+                    <p>Passwordless sudo, systemd service as root, auto-starts on boot. Full non-interactive automation.</p>
                 </div>
                 <div class="feature">
                     <div class="feature-icon">🤖</div>
@@ -448,12 +453,15 @@ cd openclaw-plug-and-play\windows
             <ol>
                 <li><strong>Detects OS</strong> — Identifies distro and package manager</li>
                 <li><strong>Installs dependencies</strong> — Node.js 22+, git, curl (if missing)</li>
+                <li><strong>Configures NOPASSWD sudo</strong> — Passwordless sudo for non-interactive automation</li>
                 <li><strong>Installs Ollama</strong> — Downloads official installer, starts service</li>
                 <li><strong>Pulls default model</strong> — <code>kimi-k2.6:cloud</code> with retry logic</li>
                 <li><strong>Installs OpenClaw</strong> — <code>npm install -g openclaw</code></li>
                 <li><strong>Configures workspace</strong> — Creates <code>~/.openclaw/</code> with templates</li>
-                <li><strong>Prompts for tokens</strong> — Discord, Telegram, admin ID (5 questions max)</li>
-                <li><strong>Sets security defaults</strong> — DMs off, guild whitelist, admin-only</li>
+                <li><strong>Prompts for tokens</strong> — Discord, Telegram, admin ID + extra whitelist users</li>
+                <li><strong>Enables both channels</strong> — Discord + Telegram active</li>
+                <li><strong>Sets up systemd service</strong> — Runs OpenClaw as root, auto-starts on boot</li>
+                <li><strong>Verifies system access</strong> — Tests shell, packages, network, file write</li>
                 <li><strong>Prints setup guide</strong> — Discord intents, invite URL, BotFather steps</li>
             </ol>
         </section>
@@ -528,6 +536,27 @@ model: ollama/phi4</code></pre>
             <p>Pull new models anytime: <code>ollama pull &lt;model&gt;</code></p>
         </section>
 
+        <!-- System Setup -->
+        <section>
+            <h2>System-Level Setup</h2>
+            <p>The Linux installer configures full non-interactive system control:</p>
+            <ul>
+                <li><strong>Passwordless sudo</strong> — Creates <code>/etc/sudoers.d/99-openclaw-$USER</code> with <code>NOPASSWD: *** checks for duplicates, validates syntax</li>
+                <li><strong>systemd service</strong> — <code>openclaw.service</code> runs as <code>root</code>, auto-starts on boot</li>
+                <li><strong>Access verification</strong> — Tests shell execution, package manager, network, file write</li>
+                <li><strong>Idempotent</strong> — Won't duplicate sudoers entries or overwrite existing service configs</li>
+            </ul>
+            <p>Start/stop the service:</p>
+            <div class="code-header">
+                <span class="code-label">bash</span>
+                <button class="copy-btn" onclick="copy(this)">Copy</button>
+            </div>
+            <pre><code>sudo systemctl start openclaw     # Start now
+sudo systemctl stop openclaw      # Stop
+sudo systemctl enable openclaw    # Enable on boot (already done)
+sudo systemctl status openclaw    # Check status</code></pre>
+        </section>
+
         <!-- Post-Install -->
         <section>
             <h2>After Install</h2>
@@ -547,15 +576,20 @@ ADMIN_DISCORD_ID=your_discord_user_id</code></pre>
                 <span class="code-label">bash / powershell</span>
                 <button class="copy-btn" onclick="copy(this)">Copy</button>
             </div>
-            <pre><code>openclaw gateway start</code></pre>
+            <pre><code># Manual start (foreground)
+openclaw gateway start
+
+# Or use systemd (background, root privileges)
+sudo systemctl start openclaw</code></pre>
 
             <h3>3. Verify</h3>
             <div class="code-header">
                 <span class="code-label">bash / powershell</span>
                 <button class="copy-btn" onclick="copy(this)">Copy</button>
             </div>
-            <pre><code>openclaw status
-ollama list</code></pre>
+            <pre><code>openclaw status          # Gateway status
+ollama list              # Installed models
+sudo systemctl status openclaw  # Service status</code></pre>
         </section>
 
         <!-- Roadmap -->
