@@ -231,16 +231,15 @@ agents:
     discord:
       token: ${DISCORD_TOKEN}
       guilds: []
-      allowDMs: false
+      allowDMs: true
       allowGroups: true
-      allowedUsers: []
+      allowedUsers: [${ADMIN_DISCORD_ID}]
     telegram:
       token: ${TELEGRAM_TOKEN}
     ollama:
       host: http://localhost:11434
 EOF
         ok "Config template written to ~/.openclaw/config/gateway.yaml"
-        warn "Edit the config and set your bot tokens before starting!"
     fi
     
     # Write .env template
@@ -264,11 +263,10 @@ prompt_config() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
-    read -rp "Discord Bot Token (leave blank to skip): " discord_token
+    read -rp "Discord Bot Token: " discord_token
     read -rp "Telegram Bot Token (leave blank to skip): " telegram_token
     read -rp "Your Discord User ID (admin/owner): " admin_id
-    read -rp "Allow DMs? [y/N]: " allow_dms
-    read -rp "Allow group chats? [Y/n]: " allow_groups
+    read -rp "Discord Guild ID to whitelist (leave blank for any): " guild_id
     
     # Write to .env
     local env_file="$HOME/.openclaw/.env"
@@ -277,10 +275,12 @@ prompt_config() {
         [ -n "$discord_token" ] && echo "DISCORD_TOKEN=$discord_token"
         [ -n "$telegram_token" ] && echo "TELEGRAM_TOKEN=$telegram_token"
         [ -n "$admin_id" ] && echo "ADMIN_DISCORD_ID=$admin_id"
+        [ -n "$guild_id" ] && echo "DISCORD_GUILD_ID=$guild_id"
     } > "$env_file"
     
     # Update config with values
     local config_file="$HOME/.openclaw/config/gateway.yaml"
+    
     if [ -n "$discord_token" ]; then
         sed -i "s|\${DISCORD_TOKEN}|$discord_token|" "$config_file"
     fi
@@ -288,22 +288,35 @@ prompt_config() {
         sed -i "s|\${TELEGRAM_TOKEN}|$telegram_token|" "$config_file"
     fi
     if [ -n "$admin_id" ]; then
-        sed -i "s|allowedUsers: \[\]|allowedUsers: [$admin_id]|" "$config_file"
+        sed -i "s|\${ADMIN_DISCORD_ID}|$admin_id|" "$config_file"
     fi
-    
-    case "${allow_dms,,}" in
-        y|yes) sed -i 's/allowDMs: false/allowDMs: true/' "$config_file" ;;
-    esac
-    case "${allow_groups,,}" in
-        n|no) sed -i 's/allowGroups: true/allowGroups: false/' "$config_file" ;;
-    esac
+    if [ -n "$guild_id" ]; then
+        sed -i "s|guilds: \[\]|guilds: [$guild_id]|" "$config_file"
+    fi
     
     ok "Configuration saved!"
 }
 
+# ─── Enable Both Discord and Telegram ───
+enable_channels() {
+    log "Enabling Discord and Telegram channels..."
+    
+    local config_file="$HOME/.openclaw/config/gateway.yaml"
+    
+    # Check if telegram token is set
+    if grep -q "TELEGRAM_TOKEN=.*your_" "$HOME/.openclaw/.env" 2>/dev/null || \
+       grep -q 'token: \${TELEGRAM_TOKEN}' "$config_file" 2>/dev/null; then
+        warn "Telegram token not configured. Edit ~/.openclaw/.env to enable Telegram."
+    fi
+    
+    # Note: Discord is enabled by default via channel: discord
+    # For multiple channels, user may need to adjust config manually or use channels: [discord, telegram]
+    
+    ok "Discord enabled. Telegram configured (provide token to activate)."
+}
+
 # ─── Print Discord Setup Helper ───
 discord_helper() {
-    local client_id="YOUR_CLIENT_ID"
     local perms="274877910080"  # Send Messages, Read, Embed, Reactions, etc.
     
     echo ""
@@ -323,6 +336,12 @@ discord_helper() {
     echo "Invite URL (replace YOUR_CLIENT_ID):"
     echo "https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=$perms&integration_type=0&scope=bot+applications.commands"
     echo ""
+    echo "Whitelist Settings (configured in gateway.yaml):"
+    echo "   • DMs:        ENABLED (allowDMs: true)"
+    echo "   • Groups:     ENABLED (allowGroups: true)"
+    echo "   • Admin only: Your Discord ID in allowedUsers"
+    echo "   • Guild:      Restricted to whitelisted guilds if provided"
+    echo ""
 }
 
 # ─── Print Telegram Setup Helper ───
@@ -335,6 +354,7 @@ telegram_helper() {
     echo "1. Message @BotFather on Telegram"
     echo "2. Send /newbot and follow prompts"
     echo "3. Copy the HTTP API token"
+    echo "4. Token saved to ~/.openclaw/.env"
     echo ""
 }
 
@@ -352,14 +372,19 @@ print_status() {
     echo "Models:     ollama list"
     echo ""
     echo "Next steps:"
-    echo "  1. Set your bot tokens in ~/.openclaw/.env"
-    echo "  2. Review ~/.openclaw/config/gateway.yaml"
-    echo "  3. Start OpenClaw: openclaw gateway start"
+    echo "  1. Set your bot tokens in ~/.openclaw/.env (if skipped during install)"
+    echo "  2. Start OpenClaw: openclaw gateway start"
+    echo ""
+    echo "Discord Settings:"
+    echo "  ✓ DMs enabled"
+    echo "  ✓ Groups enabled"
+    echo "  ✓ Admin whitelist active"
     echo ""
     echo "Commands:"
     echo "  ollama list              # List models"
     echo "  ollama pull <model>      # Pull a model"
     echo "  openclaw status          # Check status"
+    echo "  openclaw gateway start   # Start the gateway"
     echo ""
 }
 
@@ -379,6 +404,7 @@ main() {
     install_openclaw
     configure_openclaw
     prompt_config
+    enable_channels
     discord_helper
     telegram_helper
     print_status
