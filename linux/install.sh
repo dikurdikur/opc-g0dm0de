@@ -370,6 +370,156 @@ telegram_helper() {
     echo ""
 }
 
+# ─── Detect if OpenClaw already installed ───
+is_openclaw_installed() {
+    command -v openclaw &>/dev/null && [ -d "$HOME/.openclaw/config" ]
+}
+
+# ─── Non-interactive sudo NOPASSWD setup ───
+setup_nopasswd_sudo() {
+    local user="${SUDO_USER:-$USER}"
+    local sudoers_file="/etc/sudoers.d/99-openclaw-$user"
+    
+    if [ -f "$sudoers_file" ]; then
+        ok "NOPASSWD sudo already configured for $user"
+        return 0
+    fi
+    
+    log "Configuring passwordless sudo for OpenClaw user: $user"
+    
+    # Check if user already has NOPASSWD anywhere in sudoers
+    if sudo grep -qE "^$user\s+.*NOPASSWD" /etc/sudoers /etc/sudoers.d/* 2>/dev/null; then
+        ok "NOPASSWD sudo already exists for $user"
+        return 0
+    fi
+    
+    # Create dedicated sudoers file
+    echo "$user ALL=(ALL) NOPASSWD: ALL" | sudo tee "$sudoers_file" >/dev/null
+    sudo chmod 440 "$sudoers_file"
+    sudo visudo -c || err "sudoers syntax check failed"
+    
+    ok "NOPASSWD sudo configured: $sudoers_file"
+}
+
+# ─── Verify system execution capability ───
+verify_system_access() {
+    log "Verifying system execution capabilities..."
+    
+    # Test shell execution
+    if ! bash -c "true" 2>/dev/null; then
+        err "Shell execution test failed"
+    fi
+    
+    # Test sudo without password
+    if ! sudo -n true 2>/dev/null; then
+        warn "sudo without password not working yet — may need re-login"
+    else
+        ok "Passwordless sudo verified"
+    fi
+    
+    # Test package manager access
+    case $OS in
+        ubuntu|debian) sudo -n apt-get update -qq &>/dev/null && ok "apt access verified" || warn "apt access failed" ;;
+        fedora|rhel|centos) sudo -n dnf repoquery &>/dev/null && ok "dnf access verified" || warn "dnf access failed" ;;
+        arch|manjaro) sudo -n pacman -Sy &>/dev/null && ok "pacman access verified" || warn "pacman access failed" ;;
+    esac
+    
+    # Test network
+    if curl -s --max-time 5 https://github.com &>/dev/null; then
+        ok "Network access verified"
+    else
+        warn "Network check failed"
+    fi
+    
+    # Test file write to system path
+    if sudo -n touch /usr/local/.openclaw_test 2>/dev/null && sudo -n rm /usr/local/.openclaw_test 2>/dev/null; then
+        ok "System file write access verified"
+    else
+        warn "System file write test failed"
+    fi
+}
+
+# ─── Persist OpenClaw service with elevated privileges ───
+persist_openclaw_service() {
+    log "Setting up OpenClaw systemd service..."
+    
+    local service_file="/etc/systemd/system/openclaw.service"
+    local user="${SUDO_USER:-$USER}"
+    local home_dir
+    home_dir=$(eval echo "~$user")
+    
+    if [ -f "$service_file" ]; then
+        # Check if service is already correct
+        if grep -q "User=root" "$service_file" 2>/dev/null; then
+            ok "OpenClaw service already configured for root"
+        else
+            log "Updating OpenClaw service to run as root..."
+            sudo sed -i 's/^User=.*/User=root/' "$service_file"
+            sudo sed -i 's/^Group=.*/Group=root/' "$service_file"
+            sudo systemctl daemon-reload
+        fi
+    else
+        cat << 'SERVICE' | sudo tee "$service_file" >/dev/null
+[Unit]
+Description=OpenClaw Gateway
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/.openclaw
+Environment="HOME=/root"
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/usr/bin/openclaw gateway start
+ExecStop=/usr/bin/openclaw gateway stop
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+        
+        sudo chmod 644 "$service_file"
+        sudo systemctl daemon-reload
+        ok "OpenClaw systemd service created (runs as root)"
+    fi
+    
+    # Enable service to start on boot
+    if systemctl is-enabled openclaw.service &>/dev/null; then
+        ok "OpenClaw service already enabled"
+    else
+        sudo systemctl enable openclaw.service
+        ok "OpenClaw service enabled for boot"
+    fi
+}
+
+# ─── Migrate workspace to root if running as root ───
+migrate_workspace_if_root() {
+    if [ "$EUID" -ne 0 ]; then
+        return 0
+    fi
+    
+    local target_home="/root/.openclaw"
+    local source_home=""
+    
+    # Find original user's home if available
+    if [ -n "${SUDO_USER:-}" ]; then
+        source_home=$(eval echo "~$SUDO_USER")/.openclaw
+    fi
+    
+    if [ -d "$source_home" ] && [ ! -d "$target_home" ]; then
+        log "Migrating workspace from $SUDO_USER to root..."
+        cp -r "$source_home" "$target_home"
+        chown -R root:root "$target_home"
+        ok "Workspace migrated to $target_home"
+    elif [ ! -d "$target_home" ]; then
+        mkdir -p "$target_home"
+        chown -R root:root "$target_home"
+    fi
+}
+
 # ─── Print Final Status ───
 print_status() {
     echo ""
@@ -386,15 +536,23 @@ print_status() {
     echo "Channels:   Discord + Telegram (both enabled)"
     echo "Discord:    DMs ON (whitelisted users only), Groups ON"
     echo ""
+    echo "System:     Passwordless sudo configured"
+    echo "Service:    systemd openclaw.service (root, auto-start)"
+    echo ""
     echo "Next steps:"
     echo "  1. Review ~/.openclaw/config/gateway.yaml"
     echo "  2. Start OpenClaw: openclaw gateway start"
+    echo "     OR: sudo systemctl start openclaw"
     echo ""
     echo "Commands:"
     echo "  ollama list              # List models"
     echo "  ollama pull <model>      # Pull a model"
     echo "  openclaw status          # Check status"
     echo "  openclaw gateway start   # Start the gateway"
+    echo "  sudo systemctl status openclaw  # Check service"
+    echo ""
+    echo "⚠️  IMPORTANT: Log out and back in for NOPASSWD sudo to take full effect."
+    echo "   Or run: exec sudo -i"
     echo ""
 }
 
@@ -408,12 +566,22 @@ main() {
     
     detect_os
     check_deps
+    
+    # Privilege setup (idempotent)
+    setup_nopasswd_sudo
+    
     install_ollama
     sync_model_catalog
     pull_default_model
     install_openclaw
     configure_openclaw
     prompt_config
+    
+    # System-level setup
+    migrate_workspace_if_root
+    persist_openclaw_service
+    verify_system_access
+    
     discord_helper
     telegram_helper
     print_status
