@@ -334,6 +334,23 @@
             display: none;
         }
 
+        /* Fallback models UI */
+        .fallback-section { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); }
+        .fallback-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+        .fallback-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(88, 166, 255, 0.15); border: 1px solid var(--accent);
+            border-radius: 4px; padding: 2px 8px; font-size: 12px; color: var(--accent);
+        }
+        .fallback-chip button {
+            background: none; border: none; color: var(--accent); cursor: pointer;
+            font-size: 14px; line-height: 1; padding: 0 2px;
+        }
+        .fallback-chip button:hover { color: var(--danger); }
+        .fallback-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
+        .fallback-add-row { display: flex; align-items: center; gap: 8px; }
+        .fallback-add-row select { flex: 1; }
+
         footer {
             border-top: 1px solid var(--border);
             padding: 24px 0;
@@ -531,6 +548,11 @@
             { id: 'qwen2.5', name: 'qwen2.5' },
             { id: 'phi4', name: 'phi4' },
             { id: 'deepseek-r1:8b', name: 'deepseek-r1:8b' },
+            { id: 'gemini', name: 'gemini (google)' },
+            { id: 'claude-opus-4', name: 'claude-opus-4 (anthropic)' },
+            { id: 'gpt-5.5', name: 'gpt-5.5 (openai)' },
+            { id: 'ollama/qwen3:8b', name: 'qwen3:8b (local fast)' },
+            { id: 'ollama/llama3:8b', name: 'llama3:8b (local fast)' },
         ];
 
         // Identity presets for BOOTSTRAP.md
@@ -676,7 +698,8 @@ I read codebases, write tests, and deploy changes.
                 agents = data.ag.map(a => ({
                     id: a.id || 'agent-' + Math.random().toString(36).substr(2, 5),
                     model: a.m || 'ollama/kimi-k2.6:cloud',
-                    channels: a.c || ['discord']
+                    channels: a.c || ['discord'],
+                    fallbacks: a.fb || []
                 }));
             } else {
                 addDefaultAgent();
@@ -702,7 +725,8 @@ I read codebases, write tests, and deploy changes.
                 ag: agents.map(a => ({
                     id: a.id,
                     m: a.model,
-                    c: a.channels
+                    c: a.channels,
+                    fb: a.fallbacks || []
                 }))
             };
         }
@@ -714,6 +738,15 @@ I read codebases, write tests, and deploy changes.
             agents.forEach((agent, index) => {
                 const div = document.createElement('div');
                 div.className = 'agent-card';
+                
+                // Build fallback chips HTML
+                const fallbackChips = (agent.fallbacks || []).map((fm, fi) => `
+                    <span class="fallback-chip">
+                        ${fm}
+                        <button type="button" onclick="removeFallback(${index}, ${fi})" title="Remove">×</button>
+                    </span>
+                `).join('');
+                
                 div.innerHTML = `
                     <div class="agent-card-header">
                         <span class="agent-card-title">Agent ${index + 1}</span>
@@ -725,7 +758,7 @@ I read codebases, write tests, and deploy changes.
                             <input type="text" value="${agent.id}" onchange="updateAgent(${index}, 'id', this.value)" placeholder="main">
                         </div>
                         <div class="form-group">
-                            <label>Model</label>
+                            <label>Primary Model</label>
                             <select onchange="updateAgent(${index}, 'model', this.value)">
                                 ${MODELS.map(m => `<option value="${m.id}" ${agent.model === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
                                 <option value="custom" ${!MODELS.find(m => m.id === agent.model) ? 'selected' : ''}>Custom...</option>
@@ -734,14 +767,28 @@ I read codebases, write tests, and deploy changes.
                     </div>
                     ${!MODELS.find(m => m.id === agent.model) ? `
                     <div class="form-group" style="margin-top: 12px;">
-                        <label>Model</label>
-                        <select onchange="updateAgent(${index}, 'model', this.value)">
-                            ${MODELS.map(m => `<option value="${m.id}" ${agent.model === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
-                            <option value="custom" ${!MODELS.find(m => m.id === agent.model) ? 'selected' : ''}>Custom...</option>
-                        </select>
+                        <label>Custom Model</label>
+                        <input type="text" value="${agent.model}" onchange="updateAgent(${index}, 'model', this.value)" placeholder="provider/model">
                     </div>
                     ` : ''}
-                    <div style="margin-top: 12px;">
+                    
+                    <!-- Fallback Models Section -->
+                    <div class="form-group fallback-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border);">
+                        <label>Fallback Models <span class="hint">ordered failover if primary fails</span></label>
+                        <div class="fallback-chips" id="fallbackChips_${index}">
+                            ${fallbackChips || '<span class="fallback-empty">No fallbacks — primary only</span>'}
+                        </div>
+                        <div class="fallback-add-row">
+                            <select id="fallbackSelect_${index}">
+                                ${MODELS.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
+                                <option value="custom">Custom...</option>
+                            </select>
+                            <input type="text" id="fallbackCustom_${index}" placeholder="provider/model" style="display:none; margin-left: 8px; flex:1;">
+                            <button type="button" class="btn btn-secondary" onclick="addFallback(${index})" style="margin-left: 8px; white-space: nowrap;">+ Add</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 16px;">
                         <label>Channels</label>
                         <div class="channel-tags">
                             ${['discord', 'telegram', 'webchat', 'slack', 'whatsapp', 'signal', 'matrix', 'irc'].map(ch => `
@@ -754,6 +801,20 @@ I read codebases, write tests, and deploy changes.
                     </div>
                 `;
                 container.appendChild(div);
+                
+                // Wire up fallback select change handler
+                const fbSelect = document.getElementById(`fallbackSelect_${index}`);
+                if (fbSelect) {
+                    fbSelect.onchange = function() {
+                        const customInput = document.getElementById(`fallbackCustom_${index}`);
+                        if (this.value === 'custom') {
+                            customInput.style.display = 'block';
+                            customInput.focus();
+                        } else {
+                            customInput.style.display = 'none';
+                        }
+                    };
+                }
             });
         }
 
@@ -787,6 +848,47 @@ I read codebases, write tests, and deploy changes.
             renderAgents();
         }
 
+        function addFallback(agentIndex) {
+            const agent = agents[agentIndex];
+            if (!agent.fallbacks) agent.fallbacks = [];
+            
+            const select = document.getElementById(`fallbackSelect_${agentIndex}`);
+            const customInput = document.getElementById(`fallbackCustom_${agentIndex}`);
+            
+            let model = select.value;
+            if (model === 'custom') {
+                model = customInput.value.trim();
+            }
+            
+            if (!model || model === 'custom') {
+                alert('Select or enter a fallback model');
+                return;
+            }
+            
+            // Prevent duplicates
+            if (agent.fallbacks.includes(model)) {
+                alert('This model is already a fallback');
+                return;
+            }
+            
+            // Prevent adding primary as fallback
+            if (model === agent.model) {
+                alert('Cannot add primary model as its own fallback');
+                return;
+            }
+            
+            agent.fallbacks.push(model);
+            renderAgents();
+        }
+
+        function removeFallback(agentIndex, fallbackIndex) {
+            const agent = agents[agentIndex];
+            if (agent.fallbacks) {
+                agent.fallbacks.splice(fallbackIndex, 1);
+            }
+            renderAgents();
+        }
+
         function generate() {
             const d = getFormData();
 
@@ -814,7 +916,7 @@ I read codebases, write tests, and deploy changes.
             // Update summary
             const parts = [
                 `• ${d.ag.length} agent(s): ${d.ag.map(a => a.id).join(', ')}`,
-                `• Models: ${d.ag.map(a => a.m).join(', ')}`,
+                `• Models: ${d.ag.map(a => a.m + (a.fb?.length ? ' → ' + a.fb.join(' → ') : '')).join(', ')}`,
                 `• Channels: ${[...new Set(d.ag.flatMap(a => a.c))].join(', ')}`,
                 d.ip ? (d.ip === 'custom' ? `• Identity: Custom` : `• Identity: ${d.ip}`) : '• Identity: Skip (OpenClaw will ask)',
                 `• Discord: DMs=${d.dm ? 'ON' : 'OFF'}, Groups=${d.gr ? 'ON' : 'OFF'}`,
