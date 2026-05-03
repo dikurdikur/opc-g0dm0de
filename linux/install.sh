@@ -275,23 +275,30 @@ prompt_config() {
         guild_id="${guild_id:-}"
     fi
     
-    # Only prompt if not already set via env vars
-    if [ -z "$discord_token" ]; then
-        read -rp "Discord Bot Token: " discord_token
+    # Only prompt if not already set via env vars AND interactive
+    if [ "$non_interactive" = true ]; then
+        ok "Non-interactive mode — skipping prompts. Using env vars or defaults."
+        # Set defaults for anything missing
+        [ -z "$discord_token" ] && discord_token="YOUR_DISCORD_BOT_TOKEN"
+        [ -z "$admin_id" ] && admin_id="YOUR_ADMIN_ID"
     else
-        ok "Discord token provided via DISCORD_TOKEN environment variable"
-    fi
-    
-    if [ -z "$telegram_token" ]; then
-        read -rp "Telegram Bot Token (leave blank to skip): " telegram_token
-    else
-        ok "Telegram token provided via TELEGRAM_TOKEN environment variable"
-    fi
-    
-    if [ -z "$admin_id" ]; then
-        read -rp "Your Discord User ID (admin/owner): " admin_id
-    else
-        ok "Admin ID provided via ADMIN_DISCORD_ID environment variable"
+        if [ -z "$discord_token" ]; then
+            read -rp "Discord Bot Token: " discord_token
+        else
+            ok "Discord token provided via DISCORD_TOKEN environment variable"
+        fi
+        
+        if [ -z "$telegram_token" ]; then
+            read -rp "Telegram Bot Token (leave blank to skip): " telegram_token
+        else
+            ok "Telegram token provided via TELEGRAM_TOKEN environment variable"
+        fi
+        
+        if [ -z "$admin_id" ]; then
+            read -rp "Your Discord User ID (admin/owner): " admin_id
+        else
+            ok "Admin ID provided via ADMIN_DISCORD_ID environment variable"
+        fi
     fi
     
     # Build whitelist array
@@ -319,7 +326,9 @@ prompt_config() {
         done
     fi
     
-    if [ -z "$guild_id" ]; then
+    if [ "$non_interactive" = true ] && [ -z "$guild_id" ]; then
+        ok "Non-interactive mode — guild ID left empty (any server allowed)"
+    elif [ -z "$guild_id" ]; then
         read -rp "Discord Guild ID to whitelist (leave blank for any server): " guild_id
     else
         ok "Guild ID provided via DISCORD_GUILD_ID environment variable"
