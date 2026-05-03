@@ -964,6 +964,15 @@ chmod +x bootstrap.sh \u0026\u0026 bash bootstrap.sh`;
                 envs.push(`IDENTITY_PRESET='${escapeShell(d.ip)}'`);
             }
 
+            // Encode agent config (with fallbacks) for the install script
+            const agentsJson = JSON.stringify(d.ag.map(a => ({
+                id: a.id,
+                m: a.m,
+                c: a.c,
+                fb: a.fb || []
+            })));
+            envs.push(`AGENTS_JSON='${escapeShell(agentsJson)}'`);
+
             return `${envs.join(' ')} bash -c 'rm -rf /tmp/omg \u0026\u0026 git clone https://github.com/jlaiii/openclaw-god-mode.git /tmp/omg \u0026\u0026 cd /tmp/omg/linux \u0026\u0026 chmod +x install.sh \u0026\u0026 ./install.sh'`;
         }
 

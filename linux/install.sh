@@ -233,9 +233,59 @@ EOF
     fi
     
     # Create openclaw.json with gateway.mode=local (required by OpenClaw)
-    # Also supports multi-agent mode with agents.defaults
+    # Also supports multi-agent mode with agents.list
     if [ ! -f "$workspace/openclaw.json" ]; then
-        cat > "$workspace/openclaw.json" << 'JSON'
+        # Check if AGENTS_JSON env var is set (from configurator)
+        if [ -n "${AGENTS_JSON:-}" ]; then
+            # User provided agent config from configurator — parse and build agents.list
+            log "Using agent configuration from configurator..."
+            
+            # Build agents.list JSON using node (already installed)
+            local agents_list
+            agents_list="$(echo "$AGENTS_JSON" | node -e '
+const agents = JSON.parse(require("fs").readFileSync(0, "utf8"));
+const blocks = agents.map(a => {
+    const fb = a.fb || [];
+    const modelLine = fb.length > 0
+        ? `"model": { "primary": ${JSON.stringify(a.m)}, "fallbacks": [${fb.map(f => JSON.stringify(f)).join(", ")}] }`
+        : `"model": { "primary": ${JSON.stringify(a.m)} }`;
+    const channelsStr = (a.c || ["discord"]).map(c => JSON.stringify(c)).join(", ");
+    return `    {\n      "id": ${JSON.stringify(a.id)},\n      ${modelLine},\n      "channels": [${channelsStr}]\n    }`;
+});
+console.log(blocks.join(",\n"));
+' 2>/dev/null || echo '    { "id": "main", "model": { "primary": "ollama/kimi-k2.6:cloud" }, "channels": ["discord", "telegram"] }')"
+
+            cat > "$workspace/openclaw.json" << JSON
+{
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace",
+      "sandbox": { "mode": "off" }
+    },
+    "list": [
+$agents_list
+    ]
+  },
+  "gateway": {
+    "mode": "local",
+    "auth": { "mode": "token", "token": "auto-generated-on-first-install" },
+    "port": 18789,
+    "bind": "loopback",
+    "controlUi": {
+      "dangerouslyDisableDeviceAuth": true,
+      "allowInsecureAuth": true
+    }
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.5.2",
+    "lastTouchedAt": "auto"
+  }
+}
+JSON
+            ok "Multi-agent configuration applied from configurator"
+        else
+            # Default single-agent config
+            cat > "$workspace/openclaw.json" << 'JSON'
 {
   "agents": {
     "defaults": {
@@ -260,8 +310,9 @@ EOF
   }
 }
 JSON
-        ok "Gateway mode set to local in ~/.openclaw/openclaw.json"
-        ok "Multi-agent support enabled"
+            ok "Gateway mode set to local in ~/.openclaw/openclaw.json"
+            ok "Single-agent defaults configured"
+        fi
     fi
     
     # Copy default BOOTSTRAP.md to workspace so OpenClaw skips onboarding
