@@ -425,9 +425,9 @@
             <div class="section">
                 <div class="section-title">📋 Your Install Command</div>
                 <div class="result-box">
-                    <div class="result-label">Copy & paste into terminal (Linux)</div>
+                    <div class="result-label">Copy & paste — one command, done</div>
                     <div class="oneliner" id="oneliner" onclick="copyOneliner()" title="Click to copy"></div>
-                    <div class="copy-hint" id="copyHint">↑ Click to copy — then paste into your terminal</div>
+                    <div class="copy-hint" id="copyHint">↑ Click to copy — paste into terminal and hit Enter</div>
                 </div>
 
                 <div class="result-box">
@@ -545,7 +545,7 @@
             const shareUrl = window.location.origin + window.location.pathname + '#' + hash;
             document.getElementById('shareUrl').value = shareUrl;
 
-            // Build one-liner: single pasteable command
+            // Build one-liner: ultra-compact single paste
             const envs = [];
             envs.push(`DISCORD_TOKEN='${escapeShell(d.dt)}'`);
             envs.push(`ADMIN_DISCORD_ID='${escapeShell(d.ad)}'`);
@@ -553,11 +553,7 @@
             if (d.gu) envs.push(`DISCORD_GUILD_ID='${escapeShell(d.gu)}'`);
             if (d.tt) envs.push(`TELEGRAM_TOKEN='${escapeShell(d.tt)}'`);
 
-            const oneliner = `export ${envs.join(' ')} && \\
-  git clone https://github.com/jlaiii/openclaw-god-mode.git /tmp/openclaw-god-mode && \\
-  cd /tmp/openclaw-god-mode/linux && \\
-  chmod +x install.sh && \\
-  ./install.sh`;
+            const oneliner = `${envs.join(' ')} bash -c 'rm -rf /tmp/omg && git clone https://github.com/jlaiii/openclaw-god-mode.git /tmp/omg && cd /tmp/omg/linux && chmod +x install.sh && ./install.sh'`;
 
             document.getElementById('oneliner').textContent = oneliner;
 
