@@ -778,6 +778,10 @@
                         <label>Ollama Base URL <span class="hint">default: localhost</span></label>
                         <input type="text" id="ollamaBaseUrl" value="http://localhost:11434" placeholder="http://localhost:11434">
                     </div>
+                    <div class="form-group">
+                        <label>Ollama API Key <span class="hint">only needed for cloud/remote endpoints — leave blank for local</span></label>
+                        <input type="password" id="ollamaApiKey" placeholder="ollama-api-key-...">
+                    </div>
                     <p class="hint" style="margin-top: -12px; margin-bottom: 12px;">Models are loaded dynamically from your Ollama instance. Use the <a href="models.html">Model Manager</a> to pull new models.</p>
                 </div>
             </div>
@@ -1101,6 +1105,7 @@ I read codebases, write tests, and deploy changes.
             set('anthropicModel', data.aum || 'claude-sonnet-4.6');
             set('anthropicModelCustom', data.auc || '');
             set('ollamaBaseUrl', data.obu || 'http://localhost:11434');
+            set('ollamaApiKey', data.oak || '');
             onProviderChange();
 
             if (data.ip === 'custom' && data.ci) {
@@ -1181,6 +1186,7 @@ I read codebases, write tests, and deploy changes.
                 aum: document.getElementById('anthropicModel').value,
                 auc: document.getElementById('anthropicModelCustom').value.trim(),
                 obu: document.getElementById('ollamaBaseUrl').value.trim(),
+                oak: document.getElementById('ollamaApiKey').value.trim(),
                 ide: ide,          // integration enabled flags
                 in: Object.keys(inp).length ? inp : undefined,  // integration inputs (only if any set)
                 ag: agents.map(a => ({
@@ -1472,7 +1478,7 @@ I read codebases, write tests, and deploy changes.
                 d.gu ? `• Guild lock: ${d.gu}` : '• No guild restriction',
                 d.ex ? `• Extra users: ${d.ex}` : '',
                 `• Integrations: ${enabledIntegrations.join(', ') || 'none'}`,
-                d.pv ? `• Provider: ${d.pv}${d.pv === 'google' ? ' → ' + (d.guc || d.gum) : d.pv === 'anthropic' ? ' → ' + (d.auc || d.aum) : ''}` : '• Provider: ollama',
+                d.pv ? `• Provider: ${d.pv}${d.pv === 'google' ? ' → ' + (d.guc || d.gum) : d.pv === 'anthropic' ? ' → ' + (d.auc || d.aum) : d.pv === 'ollama' ? ' → ' + (d.obu) : ''}` : '• Provider: ollama',
                 d.da ? '• Device auth: DISABLED' : '• Device auth: enabled',
                 d.np ? '• NOPASSWD sudo: enabled' : '',
                 d.as ? '• Auto-start on boot: enabled' : '• Auto-start on boot: disabled',
@@ -1542,6 +1548,7 @@ I read codebases, write tests, and deploy changes.
                 if (d.aum) envLines.push(`export ANTHROPIC_MODEL='${escapeShell(d.aum)}'`);
                 if (d.auc) envLines.push(`export ANTHROPIC_MODEL_CUSTOM='${escapeShell(d.auc)}'`);
                 if (d.obu) envLines.push(`export OLLAMA_BASE_URL='${escapeShell(d.obu)}'`);
+                if (d.oak) envLines.push(`export OLLAMA_API_KEY='${escapeShell(d.oak)}'`);
                 return `mkdir -p /tmp/omg && cd /tmp/omg && cat > bootstrap.sh << 'BOOTSTRAP_EOF'
 #!/bin/bash
 set -e
@@ -1565,6 +1572,7 @@ chmod +x bootstrap.sh && bash bootstrap.sh`;
             if (d.aum) envs.push(`ANTHROPIC_MODEL='${escapeShell(d.aum)}'`);
             if (d.auc) envs.push(`ANTHROPIC_MODEL_CUSTOM='${escapeShell(d.auc)}'`);
             if (d.obu) envs.push(`OLLAMA_BASE_URL='${escapeShell(d.obu)}'`);
+            if (d.oak) envs.push(`OLLAMA_API_KEY='${escapeShell(d.oak)}'`);
 
             // Add integration env vars for standard path too
             addIntegrationEnvs(envs);
