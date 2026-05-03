@@ -52,7 +52,55 @@ cd openclaw-plug-and-play\windows
 
 ---
 
-## Features
+## ⚠️ WARNING: This Is NOT For Everyone
+
+This project removes nearly every safety guardrail OpenClaw ships with by default. It is designed for advanced users who want **maximum, unrestricted system control** from their AI agent. If you do not understand the implications below, **do not use this installer**.
+
+### What This Installer Actually Does
+
+OpenClaw's default install is designed to be safe, sandboxed, and limited:
+- Runs as a regular user
+- Requires device authentication to access the web UI
+- Prompts before running dangerous commands
+- Has no elevated system privileges
+
+**This installer strips all of that away:**
+
+| Default OpenClaw Safety | What This Script Changes |
+|------------------------|--------------------------|
+| User-level execution | **Runs as root** via systemd service |
+| Device auth required | `dangerouslyDisableDeviceAuth: true` — web UI has no login gate |
+| Prompts for approval | Passwordless `sudo` (`NOPASSWD: *** — no human in the loop |
+| Limited file access | Full read/write access to **entire filesystem** |
+| No package installation | Can `apt/dnf/pacman install` anything without asking |
+| Network restricted | Unrestricted network access |
+| Sandbox model | **Root shell** model — the AI can modify system configs, create users, wipe drives |
+
+### What This Means in Practice
+
+- The AI agent can `sudo rm -rf /` without any prompt
+- The AI agent can install malware, backdoors, or modify SSH keys
+- The AI agent can read any file on the system including `/etc/shadow`
+- Anyone with Discord/Telegram access to the bot (even whitelisted users) can issue destructive commands
+- **There is no audit trail or approval step**
+
+### Who Should Use This
+
+- You run OpenClaw on a **dedicated, isolated machine or VM**
+- You **fully trust** everyone in the `allowedUsers` whitelist
+- You understand that a compromised token or social-engineered prompt = full system compromise
+- You have **backups** and a **recovery plan**
+
+### Who Should NOT Use This
+
+- Anyone running OpenClaw on their daily driver / personal machine
+- Anyone who does not understand `sudo`, `systemd`, or Linux permissions
+- Anyone sharing the bot with people they do not absolutely trust
+- Anyone without isolated infrastructure
+
+**Use the official OpenClaw install instead:** https://github.com/openclaw/openclaw
+
+---
 
 | Feature | Description |
 |---------|-------------|

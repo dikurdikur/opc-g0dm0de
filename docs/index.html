@@ -334,6 +334,33 @@
             text-decoration: underline;
         }
 
+        /* Warning box */
+        .warning-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--danger);
+            border-left: 4px solid var(--danger);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        .warning-box h3 {
+            color: var(--danger);
+            margin-top: 0;
+        }
+        .warning-box table {
+            margin: 16px 0;
+        }
+        .warning-box td:first-child {
+            color: var(--text-muted);
+            width: 40%;
+        }
+        .warning-box td:last-child {
+            color: var(--danger);
+        }
+        .warning-box .safe {
+            color: var(--success);
+        }
+
         /* Responsive */
         @media (max-width: 600px) {
             h1 { font-size: 24px; }
@@ -366,6 +393,58 @@
     </header>
 
     <main class="container">
+        <!-- WARNING -->
+        <section class="warning-box">
+            <h3>⚠️ WARNING: This Is NOT For Everyone</h3>
+            <p>This project removes nearly every safety guardrail OpenClaw ships with by default. It is designed for advanced users who want <strong>maximum, unrestricted system control</strong> from their AI agent. If you do not understand the implications below, <strong>do not use this installer</strong>.</p>
+            
+            <h3>What This Installer Actually Does</h3>
+            <p>OpenClaw's default install is designed to be safe, sandboxed, and limited:</p>
+            <ul>
+                <li>Runs as a regular user</li>
+                <li>Requires device authentication to access the web UI</li>
+                <li>Prompts before running dangerous commands</li>
+                <li>Has no elevated system privileges</li>
+            </ul>
+            <p><strong>This installer strips all of that away:</strong></p>
+            <table>
+                <tr><td>User-level execution</td><td>Runs as <strong>root</strong> via systemd service</td></tr>
+                <tr><td>Device auth required</td><td><code>dangerouslyDisableDeviceAuth: true</code> — web UI has no login gate</td></tr>
+                <tr><td>Prompts for approval</td><td>Passwordless <code>sudo</code> (<code>NOPASSWD: *** — no human in the loop</td></tr>
+                <tr><td>Limited file access</td><td>Full read/write access to <strong>entire filesystem</strong></td></tr>
+                <tr><td>No package installation</td><td>Can <code>apt/dnf/pacman install</code> anything without asking</td></tr>
+                <tr><td>Network restricted</td><td>Unrestricted network access</td></tr>
+                <tr><td>Sandbox model</td><td><strong>Root shell model</strong> — AI can modify system configs, create users, wipe drives</td></tr>
+            </table>
+            
+            <h3>What This Means in Practice</h3>
+            <ul>
+                <li>The AI agent can <code>sudo rm -rf /</code> without any prompt</li>
+                <li>The AI agent can install malware, backdoors, or modify SSH keys</li>
+                <li>The AI agent can read any file including <code>/etc/shadow</code></li>
+                <li>Anyone with bot access (even whitelisted users) can issue destructive commands</li>
+                <li><strong>There is no audit trail or approval step</strong></li>
+            </ul>
+            
+            <h3>Who Should Use This</h3>
+            <ul>
+                <li>Dedicated, isolated machine or VM — not your daily driver</li>
+                <li>You fully trust everyone in the <code>allowedUsers</code> whitelist</li>
+                <li>You understand a compromised token = full system compromise</li>
+                <li>You have <strong>backups</strong> and a <strong>recovery plan</strong></li>
+            </ul>
+            
+            <h3>Who Should NOT Use This</h3>
+            <ul>
+                <li>Anyone running OpenClaw on their personal machine</li>
+                <li>Anyone who does not understand <code>sudo</code>, <code>systemd</code>, or Linux permissions</li>
+                <li>Anyone sharing the bot with people they do not absolutely trust</li>
+                <li>Anyone without isolated infrastructure</li>
+            </ul>
+            
+            <p><strong>Use the official OpenClaw install instead:</strong> <a href="https://github.com/openclaw/openclaw" class="safe">https://github.com/openclaw/openclaw</a></p>
+        </section>
+
         <!-- Features -->
         <section>
             <h2>Features</h2>
