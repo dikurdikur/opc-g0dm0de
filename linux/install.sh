@@ -192,6 +192,117 @@ install_openclaw() {
     ok "OpenClaw installed"
 }
 
+# ─── Apply Provider-Specific Configuration ───
+apply_provider_config() {
+    local config_file="${1:-$HOME/.openclaw/openclaw.json}"
+    local provider="${AI_PROVIDER:-}"
+    
+    [ -z "$provider" ] && return 0
+    [ ! -f "$config_file" ] && { warn "openclaw.json not found, skipping provider config"; return 0; }
+    
+    log "Applying provider configuration: $provider"
+    
+    case "$provider" in
+        ollama)
+            local base_url="${OLLAMA_BASE_URL:-http://localhost:11434}"
+            local api_key="${OLLAMA_API_KEY:-ollama-local}"
+            local is_remote=false
+            
+            # Detect if remote/cloud Ollama
+            case "$base_url" in
+                https://*|*ollama.com*) is_remote=true ;;
+                http://localhost*|http://127.0.*|http://[::1]*|*.local*|http://192.168.*|http://10.*|http://172.1[6-9].*|http://172.2[0-9].*|http://172.3[01].*) is_remote=false ;;
+                http://*) is_remote=true ;;
+            esac
+            
+            # Set apiKey: real key for remote, ollama-local marker for LAN/loopback
+            local effective_key="$api_key"
+            [ "$is_remote" = false ] && [ "$api_key" = "" ] && effective_key="ollama-local"
+            
+            # Merge provider config into openclaw.json using node
+            node -e "
+const fs = require('fs');
+const cfg = JSON.parse(fs.readFileSync('$config_file', 'utf8'));
+if (!cfg.models) cfg.models = {};
+if (!cfg.models.providers) cfg.models.providers = {};
+
+cfg.models.providers.ollama = {
+    api: 'ollama',
+    baseUrl: '$base_url',
+    apiKey: '$effective_key'
+};
+
+// Also set env var in agents.defaults.env if supported
+if (!cfg.agents) cfg.agents = {};
+if (!cfg.agents.defaults) cfg.agents.defaults = {};
+if (!cfg.agents.defaults.env) cfg.agents.defaults.env = {};
+cfg.agents.defaults.env.OLLAMA_API_KEY = '$effective_key';
+
+fs.writeFileSync('$config_file', JSON.stringify(cfg, null, 2));
+console.log('Ollama provider configured: baseUrl=$base_url, apiKey=***');
+" 2>/dev/null && ok "Ollama provider configured (baseUrl: $base_url)" || warn "Could not inject Ollama provider config"
+            ;;
+        
+        google)
+            local api_key="${GOOGLE_API_KEY:-}"
+            local model="${GOOGLE_MODEL_CUSTOM:-${GOOGLE_MODEL:-gemini-3.1-flash}}"
+            [ -z "$api_key" ] && { warn "GOOGLE_API_KEY not set, skipping Google provider config"; return 0; }
+            
+            node -e "
+const fs = require('fs');
+const cfg = JSON.parse(fs.readFileSync('$config_file', 'utf8'));
+if (!cfg.models) cfg.models = {};
+if (!cfg.models.providers) cfg.models.providers = {};
+
+cfg.models.providers.google = {
+    api: 'google',
+    apiKey: '$api_key'
+};
+
+// Update default model to Google
+if (!cfg.agents) cfg.agents = {};
+if (!cfg.agents.defaults) cfg.agents.defaults = {};
+if (!cfg.agents.defaults.model) cfg.agents.defaults.model = {};
+cfg.agents.defaults.model.primary = 'google/$model';
+
+fs.writeFileSync('$config_file', JSON.stringify(cfg, null, 2));
+console.log('Google provider configured: model=$model');
+" 2>/dev/null && ok "Google provider configured (model: $model)" || warn "Could not inject Google provider config"
+            ;;
+        
+        anthropic)
+            local api_key="${ANTHROPIC_API_KEY:-}"
+            local model="${ANTHROPIC_MODEL_CUSTOM:-${ANTHROPIC_MODEL:-claude-sonnet-4.6}}"
+            [ -z "$api_key" ] && { warn "ANTHROPIC_API_KEY not set, skipping Anthropic provider config"; return 0; }
+            
+            node -e "
+const fs = require('fs');
+const cfg = JSON.parse(fs.readFileSync('$config_file', 'utf8'));
+if (!cfg.models) cfg.models = {};
+if (!cfg.models.providers) cfg.models.providers = {};
+
+cfg.models.providers.anthropic = {
+    api: 'anthropic',
+    apiKey: '$api_key'
+};
+
+// Update default model to Anthropic
+if (!cfg.agents) cfg.agents = {};
+if (!cfg.agents.defaults) cfg.agents.defaults = {};
+if (!cfg.agents.defaults.model) cfg.agents.defaults.model = {};
+cfg.agents.defaults.model.primary = 'anthropic/$model';
+
+fs.writeFileSync('$config_file', JSON.stringify(cfg, null, 2));
+console.log('Anthropic provider configured: model=$model');
+" 2>/dev/null && ok "Anthropic provider configured (model: $model)" || warn "Could not inject Anthropic provider config"
+            ;;
+        
+        *)
+            warn "Unknown provider '$provider' — skipping provider-specific config"
+            ;;
+    esac
+}
+
 # ─── Configure OpenClaw ───
 configure_openclaw() {
     log "Configuring OpenClaw..."
@@ -279,7 +390,7 @@ agents:
       # channel: ${TWITCH_CHANNEL}
       enabled: false
     ollama:
-      host: http://localhost:11434
+      host: ${OLLAMA_BASE_URL:-http://localhost:11434}
 EOF
         ok "Config template written to ~/.openclaw/config/gateway.yaml"
     fi
@@ -366,6 +477,10 @@ JSON
             ok "Single-agent defaults configured"
         fi
     fi
+
+    # ─── Apply provider-specific model configuration ───
+    # This must run AFTER openclaw.json is created so we can inject provider settings
+    apply_provider_config "$workspace/openclaw.json"
     
     # Copy default BOOTSTRAP.md to workspace so OpenClaw skips onboarding
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -555,6 +670,16 @@ console.log(Array.from(allCh).join(" "));
         [ -n "${NOSTR_KEY:-}" ] && echo "NOSTR_KEY=$NOSTR_KEY"
         [ -n "${TWITCH_TOKEN:-}" ] && echo "TWITCH_TOKEN=$TWITCH_TOKEN"
         [ -n "${TWITCH_CHANNEL:-}" ] && echo "TWITCH_CHANNEL=$TWITCH_CHANNEL"
+        # Provider env vars
+        [ -n "${AI_PROVIDER:-}" ] && echo "AI_PROVIDER=$AI_PROVIDER"
+        [ -n "${OLLAMA_BASE_URL:-}" ] && echo "OLLAMA_BASE_URL=$OLLAMA_BASE_URL"
+        [ -n "${OLLAMA_API_KEY:-}" ] && echo "OLLAMA_API_KEY=$OLLAMA_API_KEY"
+        [ -n "${GOOGLE_API_KEY:-}" ] && echo "GOOGLE_API_KEY=$GOOGLE_API_KEY"
+        [ -n "${GOOGLE_MODEL:-}" ] && echo "GOOGLE_MODEL=$GOOGLE_MODEL"
+        [ -n "${GOOGLE_MODEL_CUSTOM:-}" ] && echo "GOOGLE_MODEL_CUSTOM=$GOOGLE_MODEL_CUSTOM"
+        [ -n "${ANTHROPIC_API_KEY:-}" ] && echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+        [ -n "${ANTHROPIC_MODEL:-}" ] && echo "ANTHROPIC_MODEL=$ANTHROPIC_MODEL"
+        [ -n "${ANTHROPIC_MODEL_CUSTOM:-}" ] && echo "ANTHROPIC_MODEL_CUSTOM=$ANTHROPIC_MODEL_CUSTOM"
     } > "$env_file"
     
     # Update config with values
