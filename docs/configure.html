@@ -452,7 +452,7 @@
     <footer>
         <div class="container">
             <p><a href="index.html">← Back to main site</a> · <a href="https://github.com/jlaiii/openclaw-god-mode">GitHub</a></p>
-            <p style="margin-top:8px; font-size:11px;">All settings are encoded in the URL. Nothing is sent to any server.</p>
+            <p style="margin-top:8px; font-size:11px;">All settings including tokens are encoded in the URL. Share carefully — treat URLs like passwords.</p>
         </div>
     </footer>
 
@@ -535,17 +535,17 @@
             if (!d.dt) { alert('Discord Bot Token is required'); return; }
             if (!d.ad) { alert('Admin Discord User ID is required'); return; }
 
-            // Build shareable URL (base64 JSON in hash)
+            // Build shareable URL with ALL settings (tokens included)
             const preset = {
-                dt: '', dc: d.dc, ad: d.ad, ex: d.ex, gu: d.gu,
-                dm: d.dm, gr: d.gr, tt: '', mo: d.mo, an: d.an,
+                dt: d.dt, dc: d.dc, ad: d.ad, ex: d.ex, gu: d.gu,
+                dm: d.dm, gr: d.gr, tt: d.tt, mo: d.mo, an: d.an,
                 wd: d.wd, da: d.da, np: d.np, as: d.as
             };
             const hash = encodeURIComponent(btoa(JSON.stringify(preset)));
             const shareUrl = window.location.origin + window.location.pathname + '#' + hash;
             document.getElementById('shareUrl').value = shareUrl;
 
-            // Build one-liner
+            // Build one-liner: single pasteable command
             const envs = [];
             envs.push(`DISCORD_TOKEN='${escapeShell(d.dt)}'`);
             envs.push(`ADMIN_DISCORD_ID='${escapeShell(d.ad)}'`);
@@ -578,7 +578,7 @@
             document.getElementById('results').classList.add('show');
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 
-            // Update URL without reload (only non-sensitive data)
+            // Update URL with full preset (including tokens)
             window.history.replaceState(null, '', '#' + hash);
         }
 
