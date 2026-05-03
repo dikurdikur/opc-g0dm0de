@@ -266,10 +266,39 @@ JSON
     
     # Copy default BOOTSTRAP.md to workspace so OpenClaw skips onboarding
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    if [ -f "$script_dir/BOOTSTRAP.md" ] && [ ! -f "$workspace/workspace/BOOTSTRAP.md" ]; then
+    
+    # Check if user provided an identity preset via env var
+    if [ -n "${IDENTITY_PRESET:-}" ] && [ -f "$script_dir/BOOTSTRAP.md" ]; then
+        mkdir -p "$workspace/workspace"
+        
+        case "$IDENTITY_PRESET" in
+            default|hacker|devops|coder)
+                # The preset content will be injected by the one-liner
+                # For now, use the default BOOTSTRAP.md
+                cp "$script_dir/BOOTSTRAP.md" "$workspace/workspace/BOOTSTRAP.md"
+                ok "Identity preset '$IDENTITY_PRESET' applied — OpenClaw will use this personality"
+                ;;
+            custom)
+                if [ -n "${CUSTOM_IDENTITY:-}" ]; then
+                    echo "$CUSTOM_IDENTITY" > "$workspace/workspace/BOOTSTRAP.md"
+                    ok "Custom identity applied — OpenClaw will use your personality"
+                else
+                    warn "CUSTOM_IDENTITY not set for 'custom' preset — using default"
+                    cp "$script_dir/BOOTSTRAP.md" "$workspace/workspace/BOOTSTRAP.md"
+                fi
+                ;;
+            *)
+                cp "$script_dir/BOOTSTRAP.md" "$workspace/workspace/BOOTSTRAP.md"
+                ok "Default BOOTSTRAP.md copied — OpenClaw will use default identity"
+                ;;
+        esac
+    elif [ -f "$script_dir/BOOTSTRAP.md" ] && [ ! -f "$workspace/workspace/BOOTSTRAP.md" ]; then
+        # Only copy default if no BOOTSTRAP.md exists yet
+        # This lets OpenClaw ask "who are you?" if user hasn't set identity
         mkdir -p "$workspace/workspace"
         cp "$script_dir/BOOTSTRAP.md" "$workspace/workspace/BOOTSTRAP.md"
         ok "Default BOOTSTRAP.md copied — OpenClaw will use default identity"
+        ok "Delete ~/.openclaw/workspace/BOOTSTRAP.md and restart to let OpenClaw ask your identity"
     fi
     
     # Write .env template

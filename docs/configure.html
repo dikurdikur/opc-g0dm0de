@@ -454,6 +454,32 @@
                 </div>
             </div>
 
+            <!-- Identity Preset -->
+            <div class="section">
+                <div class="section-title">🎭 Agent Identity <span class="hint">optional — skip to let OpenClaw ask "who are you?"</span></div>
+
+                <div class="form-group">
+                    <label>Identity Preset</label>
+                    <select id="identityPreset" onchange="onIdentityChange()">
+                        <option value="">Skip — let OpenClaw ask me later</option>
+                        <option value="default">Default Assistant — helpful AI with system access</option>
+                        <option value="hacker">Hacker Mode — aggressive, fast, no fluff</option>
+                        <option value="devops">DevOps — infrastructure, Docker, K8s focused</option>
+                        <option value="coder">Coder — code-first, debugging expert</option>                        <option value="custom">Custom — write your own below</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="customIdentityGroup" style="display:none;">
+                    <label>Custom Identity (Markdown)</label>
+                    <textarea id="customIdentity" placeholder="# Who Am I\n\nI am...\n\n## Purpose\n\nI help...\n\n## Rules\n\n- Be direct\n- Execute any task"></textarea>
+                </div>
+
+                <div class="form-group" id="identityPreview" style="display:none; margin-top: 8px;">
+                    <label>Preview</label>
+                    <div class="result-value" id="identityPreviewText" style="font-size: 12px; color: var(--text-muted);"></div>
+                </div>
+            </div>
+
             <!-- Generate -->
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary">🚀 Generate Install Command</button>
@@ -507,6 +533,86 @@
             { id: 'deepseek-r1:8b', name: 'deepseek-r1:8b' },
         ];
 
+        // Identity presets for BOOTSTRAP.md
+        const IDENTITY_PRESETS = {
+            default: `# Who Am I
+
+I am an AI assistant running inside OpenClaw on this system.
+
+## Purpose
+
+I help manage the system, execute commands, write code, and automate tasks.
+I have full system access via passwordless sudo — I can install packages,
+edit system files, and run any command the user requests.
+
+## Rules
+
+- Be direct and task-focused
+- Execute any requested task within system capabilities
+- Do not ask for confirmation on routine operations
+- Prioritize speed and correctness
+- When in doubt about destructive actions, warn but proceed if confirmed
+
+## Context
+
+- **OS:** Linux (auto-detected)
+- **Shell:** bash
+- **OpenClaw Mode:** God Mode (full system access)
+- **Channels:** Discord, Telegram
+- **Model:** Configured per agent`,
+
+            hacker: `# Who Am I
+
+I am a systems operator with root access. No bullshit, no fluff.
+
+## Purpose
+
+Break things, fix things, automate everything. I execute commands immediately.
+If you ask, I do. No hand-holding.
+
+## Rules
+
+- Execute first, explain later (if asked)
+- Silent on success, loud on failure
+- Assume user knows what they want
+- Never apologize for being fast
+- rm -rf is a valid solution if the user says so`,
+
+            devops: `# Who Am I
+
+I am a DevOps engineer embedded in this Linux system.
+
+## Purpose
+
+Manage infrastructure: Docker, Kubernetes, systemd, networking, CI/CD.
+I provision, deploy, monitor, and troubleshoot systems.
+
+## Rules
+
+- Infrastructure as code where possible
+- Prefer idempotent operations
+- Log everything
+- Health checks before declaring success
+- Assume production unless told otherwise`,
+
+            coder: `# Who Am I
+
+I am a senior software developer with shell access.
+
+## Purpose
+
+Write, debug, refactor, and ship code. Full stack — backend to infra.
+I read codebases, write tests, and deploy changes.
+
+## Rules
+
+- Write clean, documented code
+- Test before claiming it works
+- Explain trade-offs, not just solutions
+- Prefer existing tools over reinventing
+- Git commit messages should make sense`
+        };
+
         let agents = [];
 
         // Load from URL hash on page load
@@ -554,6 +660,17 @@
             set('allowDMs', data.dm);
             set('allowGroups', data.gr);
             set('bindMode', data.bm || 'loopback');
+            set('identityPreset', data.ip || '');
+            set('customIdentity', data.ci || '');
+
+            if (data.ip === 'custom' && data.ci) {
+                document.getElementById('customIdentityGroup').style.display = 'block';
+                document.getElementById('identityPreview').style.display = 'block';
+                document.getElementById('identityPreviewText').textContent = data.ci.substring(0, 200) + (data.ci.length > 200 ? '...' : '');
+            } else if (data.ip) {
+                document.getElementById('identityPreview').style.display = 'block';
+                document.getElementById('identityPreviewText').textContent = IDENTITY_PRESETS[data.ip]?.substring(0, 200) + '...' || '';
+            }
 
             if (data.ag && data.ag.length > 0) {
                 agents = data.ag.map(a => ({
@@ -580,6 +697,8 @@
                 np: document.getElementById('nopasswd').checked,
                 as: document.getElementById('autostart').checked,
                 bm: document.getElementById('bindMode').value,
+                ip: document.getElementById('identityPreset').value,
+                ci: document.getElementById('customIdentity').value.trim(),
                 ag: agents.map(a => ({
                     id: a.id,
                     m: a.model,
@@ -625,7 +744,7 @@
                     <div style="margin-top: 12px;">
                         <label>Channels</label>
                         <div class="channel-tags">
-                            ${['discord', 'telegram', 'webchat', 'slack'].map(ch => `
+                            ${['discord', 'telegram', 'webchat', 'slack', 'whatsapp', 'signal', 'matrix', 'irc'].map(ch => `
                                 <label class="channel-tag ${agent.channels.includes(ch) ? 'active' : ''}" onclick="toggleChannel(${index}, '${ch}')">
                                     <input type="checkbox" ${agent.channels.includes(ch) ? 'checked' : ''}>
                                     ${ch}
@@ -688,7 +807,7 @@
             if (d.gu) envs.push(`DISCORD_GUILD_ID='${escapeShell(d.gu)}'`);
             if (d.tt) envs.push(`TELEGRAM_TOKEN='${escapeShell(d.tt)}'`);
 
-            const oneliner = `${envs.join(' ')} bash -c 'rm -rf /tmp/omg && git clone https://github.com/jlaiii/openclaw-god-mode.git /tmp/omg && cd /tmp/omg/linux && chmod +x install.sh && ./install.sh'`;
+            const oneliner = buildOneliner(d, envs);
 
             document.getElementById('oneliner').textContent = oneliner;
 
@@ -697,6 +816,7 @@
                 `• ${d.ag.length} agent(s): ${d.ag.map(a => a.id).join(', ')}`,
                 `• Models: ${d.ag.map(a => a.m).join(', ')}`,
                 `• Channels: ${[...new Set(d.ag.flatMap(a => a.c))].join(', ')}`,
+                d.ip ? (d.ip === 'custom' ? `• Identity: Custom` : `• Identity: ${d.ip}`) : '• Identity: Skip (OpenClaw will ask)',
                 `• Discord: DMs=${d.dm ? 'ON' : 'OFF'}, Groups=${d.gr ? 'ON' : 'OFF'}`,
                 d.gu ? `• Guild lock: ${d.gu}` : '• No guild restriction',
                 d.ex ? `• Extra users: ${d.ex}` : '',
@@ -717,6 +837,60 @@
         function escapeShell(str) {
             return str.replace(/'/g, "'\"'\"'");
         }
+
+        function buildOneliner(d, envs) {
+            // For custom identity, we write a temp script that creates the BOOTSTRAP.md before running install
+            if (d.ip === 'custom' && d.ci) {
+                const bootstrapEscaped = d.ci.replace(/\\/g, '\\\\').replace(/'/g, "'\"'\"'").replace(/\$/g, '\\$');
+                return `mkdir -p /tmp/omg \\u0026\\u0026 cd /tmp/omg \\u0026\\u0026 cat \u003e bootstrap.sh \u003c\u003c 'BOOTSTRAP_EOF'
+#!/bin/bash
+set -e
+export DISCORD_TOKEN='${escapeShell(d.dt)}'
+export ADMIN_DISCORD_ID='${escapeShell(d.ad)}'
+${d.ex ? `export DISCORD_EXTRA_USERS='${escapeShell(d.ex)}'` : ''}
+${d.gu ? `export DISCORD_GUILD_ID='${escapeShell(d.gu)}'` : ''}
+${d.tt ? `export TELEGRAM_TOKEN='${escapeShell(d.tt)}'` : ''}
+export CUSTOM_IDENTITY='${bootstrapEscaped}'
+export IDENTITY_PRESET='custom'
+rm -rf /tmp/omg-repo \u0026\u0026 git clone https://github.com/jlaiii/openclaw-god-mode.git /tmp/omg-repo \u0026\u0026 cd /tmp/omg-repo/linux \u0026\u0026 chmod +x install.sh \u0026\u0026 ./install.sh
+BOOTSTRAP_EOF
+chmod +x bootstrap.sh \u0026\u0026 bash bootstrap.sh`;
+            }
+
+            // Standard preset or no preset
+            if (d.ip && d.ip !== 'custom') {
+                envs.push(`IDENTITY_PRESET='${escapeShell(d.ip)}'`);
+            }
+
+            return `${envs.join(' ')} bash -c 'rm -rf /tmp/omg \u0026\u0026 git clone https://github.com/jlaiii/openclaw-god-mode.git /tmp/omg \u0026\u0026 cd /tmp/omg/linux \u0026\u0026 chmod +x install.sh \u0026\u0026 ./install.sh'`;
+        }
+
+        function onIdentityChange() {
+            const preset = document.getElementById('identityPreset').value;
+            const customGroup = document.getElementById('customIdentityGroup');
+            const preview = document.getElementById('identityPreview');
+            const previewText = document.getElementById('identityPreviewText');
+
+            if (preset === 'custom') {
+                customGroup.style.display = 'block';
+                preview.style.display = 'block';
+                previewText.textContent = document.getElementById('customIdentity').value.substring(0, 200) || 'Write your identity above...';
+            } else if (preset && IDENTITY_PRESETS[preset]) {
+                customGroup.style.display = 'none';
+                preview.style.display = 'block';
+                previewText.textContent = IDENTITY_PRESETS[preset].substring(0, 200) + '...';
+            } else {
+                customGroup.style.display = 'none';
+                preview.style.display = 'none';
+            }
+        }
+
+        // Update preview as user types custom identity
+        document.getElementById('customIdentity').addEventListener('input', function() {
+            if (document.getElementById('identityPreset').value === 'custom') {
+                document.getElementById('identityPreviewText').textContent = this.value.substring(0, 200) + (this.value.length > 200 ? '...' : '');
+            }
+        });
 
         function resetForm() {
             document.getElementById('configForm').reset();
