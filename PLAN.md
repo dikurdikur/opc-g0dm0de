@@ -1,4 +1,4 @@
-# OpenClaw Plug & Play — Setup Script Project Plan
+# OpenClaw God Mode — Setup Script Project Plan
 
 ## Goal
 A single GitHub repo that a Linux user can clone and run one script to get a fully-working OpenClaw instance with Discord + Telegram bots configured, minimal prompts, secure defaults.
@@ -6,12 +6,12 @@ A single GitHub repo that a Linux user can clone and run one script to get a ful
 ---
 
 ## Repo Name Candidates
-- `openclaw-plug-and-play`
+- `openclaw-god-mode`
 - `openclaw-quickstart`
 - `openclaw-oneclick`
 - `openclaw-ez-setup`
 
-**Leaning toward:** `openclaw-plug-and-play`
+**Leaning toward:** `openclaw-god-mode`
 
 ---
 
@@ -92,7 +92,7 @@ agents:
 ## File Structure
 
 ```
-openclaw-plug-and-play/
+openclaw-god-mode/
 ├── README.md
 ├── install.sh              # Main entry point
 ├── lib/
@@ -124,7 +124,7 @@ openclaw-plug-and-play/
 Instead of 20 questions, do one screen at a time:
 
 ```
-[OpenClaw Plug & Play Setup]
+[OpenClaw God Mode Setup]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Discord Bot Token: ████████████████████
 Telegram Bot Token (Enter to skip):

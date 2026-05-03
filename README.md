@@ -1,4 +1,4 @@
-# ⚡ OpenClaw Plug & Play
+# ⚡ OpenClaw God Mode
 
 One-command setup for [OpenClaw](https://github.com/openclaw/openclaw) + [Ollama](https://ollama.com). From zero to running bot in minutes — with full system-level control.
 
@@ -6,7 +6,7 @@ One-command setup for [OpenClaw](https://github.com/openclaw/openclaw) + [Ollama
 [![Windows](https://img.shields.io/badge/Windows-✓-blue?style=flat-square&logo=windows)](./windows)
 [![Docker](https://img.shields.io/badge/Docker-WIP-yellow?style=flat-square&logo=docker)](./docker)
 
-📖 **[Documentation Site](https://jlaiii.github.io/openclaw-plug-and-play)**
+📖 **[Documentation Site](https://jlaiii.github.io/openclaw-god-mode)**
 
 ---
 
@@ -15,8 +15,8 @@ One-command setup for [OpenClaw](https://github.com/openclaw/openclaw) + [Ollama
 ### 🐧 Linux
 
 ```bash
-git clone https://github.com/jlaiii/openclaw-plug-and-play.git
-cd openclaw-plug-and-play/linux
+git clone https://github.com/jlaiii/openclaw-god-mode.git
+cd openclaw-god-mode/linux
 chmod +x install.sh
 ./install.sh
 ```
@@ -26,8 +26,8 @@ chmod +x install.sh
 ### 🪟 Windows
 
 ```powershell
-git clone https://github.com/jlaiii/openclaw-plug-and-play.git
-cd openclaw-plug-and-play\windows
+git clone https://github.com/jlaiii/openclaw-god-mode.git
+cd openclaw-god-mode\windows
 .\install.ps1
 ```
 
@@ -219,7 +219,7 @@ Pull new models: `ollama pull <model>`
 
 ## Contributing
 
-Open an issue or PR: [github.com/jlaiii/openclaw-plug-and-play](https://github.com/jlaiii/openclaw-plug-and-play)
+Open an issue or PR: [github.com/jlaiii/openclaw-god-mode](https://github.com/jlaiii/openclaw-god-mode)
 
 ---
 
