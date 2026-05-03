@@ -30,9 +30,8 @@
             min-height: 100vh;
         }
 
-        .container { max-width: 700px; margin: 0 auto; padding: 0 20px; }
+        .container { max-width: 800px; margin: 0 auto; padding: 0 20px; }
 
-        /* Header */
         header {
             border-bottom: 1px solid var(--border);
             padding: 32px 0;
@@ -43,7 +42,6 @@
         h1 { font-size: 26px; font-weight: 600; margin-bottom: 8px; }
         .tagline { font-size: 15px; color: var(--text-muted); }
 
-        /* Form */
         main { padding: 32px 0; }
 
         .section {
@@ -120,7 +118,9 @@
             align-items: center;
             gap: 10px;
             cursor: pointer;
+            margin-bottom: 10px;
         }
+        .checkbox-row:last-child { margin-bottom: 0; }
 
         .checkbox-row input[type="checkbox"] {
             width: 18px;
@@ -133,6 +133,7 @@
             margin: 0;
             cursor: pointer;
             color: var(--text);
+            font-size: 14px;
         }
 
         .btn {
@@ -148,7 +149,6 @@
             transition: all 0.2s;
             cursor: pointer;
             border: none;
-            width: 100%;
         }
 
         .btn-primary {
@@ -164,6 +164,15 @@
         }
         .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
+        .btn-danger {
+            background: var(--bg-input);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        .btn-danger:hover { background: var(--danger); color: var(--bg); }
+
         .btn-group {
             display: flex;
             gap: 10px;
@@ -171,7 +180,6 @@
         }
         .btn-group .btn { width: auto; flex: 1; }
 
-        /* Results */
         .results {
             display: none;
             margin-top: 20px;
@@ -237,7 +245,6 @@
             white-space: nowrap;
         }
 
-        /* Toggle advanced */
         .advanced-toggle {
             text-align: center;
             margin: 16px 0;
@@ -255,7 +262,6 @@
         }
         .advanced-section.show { display: block; }
 
-        /* Warning */
         .warning-box {
             background: var(--bg-secondary);
             border: 1px solid var(--danger);
@@ -267,7 +273,67 @@
         }
         .warning-box strong { color: var(--danger); }
 
-        /* Footer */
+        /* Agent cards */
+        .agent-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .agent-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .agent-card-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .agent-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .agent-grid .form-group {
+            margin-bottom: 0;
+        }
+
+        .channel-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .channel-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .channel-tag.active {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .channel-tag input {
+            display: none;
+        }
+
         footer {
             border-top: 1px solid var(--border);
             padding: 24px 0;
@@ -278,12 +344,12 @@
         footer a { color: var(--accent); text-decoration: none; }
         footer a:hover { text-decoration: underline; }
 
-        /* Responsive */
-        @media (max-width: 500px) {
+        @media (max-width: 600px) {
             h1 { font-size: 22px; }
             .btn-group { flex-direction: column; }
             .share-url { flex-direction: column; }
             .share-url button { width: 100%; }
+            .agent-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -292,7 +358,7 @@
         <div class="container">
             <div class="logo">⚙️</div>
             <h1>OpenClaw God Mode — Quick Configurator</h1>
-            <p class="tagline">Fill in your settings. Get a one-liner install command or a shareable preset URL.</p>
+            <p class="tagline">Multi-agent setup. Pick your bots, models, channels. One command, done.</p>
         </div>
     </header>
 
@@ -303,33 +369,69 @@
         </div>
 
         <form id="configForm" onsubmit="event.preventDefault(); generate();">
-            <!-- Discord -->
+            <!-- Bot Tokens -->
             <div class="section">
-                <div class="section-title">💬 Discord Bot</div>
+                <div class="section-title">🔑 Bot Tokens</div>
 
                 <div class="form-group">
-                    <label>Bot Token <span class="required">*</span> <span class="hint">from discord.com/developers/applications</span></label>
+                    <label>Discord Bot Token <span class="required">*</span> <span class="hint">discord.com/developers/applications</span></label>
                     <input type="password" id="discordToken" placeholder="MTI3N..." required>
                 </div>
 
                 <div class="form-group">
-                    <label>Application ID (Client ID) <span class="hint">for invite URL generation</span></label>
-                    <input type="text" id="discordClientId" placeholder="1234567890123456789">
+                    <label>Telegram Bot Token <span class="hint">from @BotFather — optional</span></label>
+                    <input type="password" id="telegramToken" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
                 </div>
+            </div>
+
+            <!-- Access Control -->
+            <div class="section">
+                <div class="section-title">🛡️ Access Control</div>
 
                 <div class="form-group">
-                    <label>Your Discord User ID (Admin) <span class="required">*</span> <span class="hint">right-click your name → Copy User ID</span></label>
+                    <label>Your Discord User ID (Admin) <span class="required">*</span> <span class="hint">right-click name → Copy User ID</span></label>
                     <input type="text" id="adminId" placeholder="1234567890123456789" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Extra Whitelisted User IDs <span class="hint">comma-separated, optional</span></label>
+                    <label>Extra Whitelisted User IDs <span class="hint">comma-separated</span></label>
                     <input type="text" id="extraUsers" placeholder="9876543210987654321, 1111111111111111111">
                 </div>
 
                 <div class="form-group">
-                    <label>Guild ID (Server Lock) <span class="hint">leave empty to allow any server</span></label>
+                    <label>Guild ID (Server Lock) <span class="hint">empty = any server</span></label>
                     <input type="text" id="guildId" placeholder="1234567890123456789">
+                </div>
+            </div>
+
+            <!-- Agents -->
+            <div class="section">
+                <div class="section-title">🤖 Agents <span class="hint">multi-agent mode — each bot can have different model + channels</span></div>
+
+                <div id="agentsList"></div>
+
+                <div class="btn-group" style="margin-top: 12px;">
+                    <button type="button" class="btn btn-secondary" onclick="addAgent()">+ Add Agent</button>
+                </div>
+            </div>
+
+            <!-- God Mode Settings -->
+            <div class="section">
+                <div class="section-title">🔥 God Mode Settings</div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="deviceAuth" checked>
+                    <label for="deviceAuth">Disable device auth on web UI <span class="hint">dangerouslyDisableDeviceAuth: true</span></label>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="nopasswd" checked>
+                    <label for="nopasswd">Passwordless sudo (NOPASSWD) <span class="hint">required for full system automation</span></label>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="autostart" checked>
+                    <label for="autostart">Auto-start on boot <span class="hint">systemd user service</span></label>
                 </div>
 
                 <div class="checkbox-row">
@@ -341,75 +443,14 @@
                     <input type="checkbox" id="allowGroups" checked>
                     <label for="allowGroups">Allow Groups (servers)</label>
                 </div>
-            </div>
 
-            <!-- Telegram -->
-            <div class="section">
-                <div class="section-title">📱 Telegram Bot (Optional)</div>
-
-                <div class="form-group">
-                    <label>Bot Token <span class="hint">from @BotFather</span></label>
-                    <input type="password" id="telegramToken" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
-                </div>
-            </div>
-
-            <!-- Model -->
-            <div class="section">
-                <div class="section-title">🧠 AI Model</div>
-
-                <div class="form-group">
-                    <label>Default Model</label>
-                    <select id="model">
-                        <option value="ollama/kimi-k2.6:cloud">kimi-k2.6:cloud (default)</option>
-                        <option value="llama3.2">llama3.2</option>
-                        <option value="llama3.1:8b">llama3.1:8b</option>
-                        <option value="mistral">mistral</option>
-                        <option value="qwen2.5">qwen2.5</option>
-                        <option value="phi4">phi4</option>
-                        <option value="deepseek-r1:8b">deepseek-r1:8b</option>
-                        <option value="custom">Custom (enter below)</option>
+                <div class="form-group" style="margin-top: 12px;">
+                    <label>Gateway Bind Mode</label>
+                    <select id="bindMode">
+                        <option value="loopback">loopback (localhost only)</option>
+                        <option value="lan">lan (local network)</option>
+                        <option value="auto">auto</option>
                     </select>
-                </div>
-
-                <div class="form-group" id="customModelGroup" style="display:none;">
-                    <label>Custom Model Name</label>
-                    <input type="text" id="customModel" placeholder="model:tag">
-                </div>
-            </div>
-
-            <!-- Advanced -->
-            <div class="advanced-toggle">
-                <a onclick="toggleAdvanced()" id="advLink">⚙️ Show Advanced Settings</a>
-            </div>
-
-            <div class="advanced-section" id="advancedSection">
-                <div class="section">
-                    <div class="section-title">⚙️ Advanced</div>
-
-                    <div class="form-group">
-                        <label>Agent Name</label>
-                        <input type="text" id="agentName" value="NanoBot" placeholder="MyBot">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Workspace Directory</label>
-                        <input type="text" id="workspaceDir" value="~/.openclaw" placeholder="/home/user/.openclaw">
-                    </div>
-
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="deviceAuth" checked>
-                        <label for="deviceAuth">Disable device auth on web UI <span class="hint">(dangerouslyDisableDeviceAuth)</span></label>
-                    </div>
-
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="nopasswd" checked>
-                        <label for="nopasswd">Configure passwordless sudo <span class="hint">(NOPASSWD for automation)</span></label>
-                    </div>
-
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="autostart" checked>
-                        <label for="autostart">Auto-start on boot <span class="hint">(systemd user service)</span></label>
-                    </div>
                 </div>
             </div>
 
@@ -436,14 +477,12 @@
                         <input type="text" id="shareUrl" readonly>
                         <button class="btn btn-secondary" onclick="copyShareUrl()">Copy</button>
                     </div>
-                    <div class="copy-hint">Bookmark this URL to save your preset. It never stores tokens server-side.</div>
+                    <div class="copy-hint">Bookmark this URL to save your preset. Treat URLs like passwords.</div>
                 </div>
 
                 <div class="result-box">
                     <div class="result-label">What this command does</div>
-                    <div class="result-value" id="summary">
-                        Clones the repo, sets environment variables, and runs the installer non-interactively.
-                    </div>
+                    <div class="result-value" id="summary"></div>
                 </div>
             </div>
         </div>
@@ -452,11 +491,24 @@
     <footer>
         <div class="container">
             <p><a href="index.html">← Back to main site</a> · <a href="https://github.com/jlaiii/openclaw-god-mode">GitHub</a></p>
-            <p style="margin-top:8px; font-size:11px;">All settings including tokens are encoded in the URL. Share carefully — treat URLs like passwords.</p>
+            <p style="margin-top:8px; font-size:11px;">All settings encoded in URL. Nothing sent to any server.</p>
         </div>
     </footer>
 
     <script>
+        // Available models
+        const MODELS = [
+            { id: 'ollama/kimi-k2.6:cloud', name: 'kimi-k2.6:cloud (default)' },
+            { id: 'llama3.2', name: 'llama3.2' },
+            { id: 'llama3.1:8b', name: 'llama3.1:8b' },
+            { id: 'mistral', name: 'mistral' },
+            { id: 'qwen2.5', name: 'qwen2.5' },
+            { id: 'phi4', name: 'phi4' },
+            { id: 'deepseek-r1:8b', name: 'deepseek-r1:8b' },
+        ];
+
+        let agents = [];
+
         // Load from URL hash on page load
         window.addEventListener('DOMContentLoaded', () => {
             const hash = window.location.hash.slice(1);
@@ -464,18 +516,24 @@
                 try {
                     const data = JSON.parse(atob(decodeURIComponent(hash)));
                     populateForm(data);
-                    generate();
                 } catch(e) {
                     console.log('No preset in URL');
+                    addDefaultAgent();
                 }
+            } else {
+                addDefaultAgent();
             }
-
-            // Show/hide custom model input
-            document.getElementById('model').addEventListener('change', (e) => {
-                document.getElementById('customModelGroup').style.display =
-                    e.target.value === 'custom' ? 'block' : 'none';
-            });
         });
+
+        function addDefaultAgent() {
+            agents = [{
+                id: 'main',
+                name: 'NanoBot',
+                model: 'ollama/kimi-k2.6:cloud',
+                channels: ['discord', 'telegram']
+            }];
+            renderAgents();
+        }
 
         function populateForm(data) {
             const set = (id, val) => {
@@ -487,46 +545,131 @@
             };
 
             set('discordToken', data.dt);
-            set('discordClientId', data.dc);
+            set('telegramToken', data.tt);
             set('adminId', data.ad);
             set('extraUsers', data.ex);
             set('guildId', data.gu);
-            set('allowDMs', data.dm);
-            set('allowGroups', data.gr);
-            set('telegramToken', data.tt);
-            set('model', data.mo);
-            set('customModel', data.cm);
-            set('agentName', data.an);
-            set('workspaceDir', data.wd);
             set('deviceAuth', data.da);
             set('nopasswd', data.np);
             set('autostart', data.as);
+            set('allowDMs', data.dm);
+            set('allowGroups', data.gr);
+            set('bindMode', data.bm || 'loopback');
 
-            if (data.mo === 'custom') {
-                document.getElementById('customModelGroup').style.display = 'block';
+            if (data.ag && data.ag.length > 0) {
+                agents = data.ag.map(a => ({
+                    id: a.id || 'agent-' + Math.random().toString(36).substr(2, 5),
+                    name: a.n || 'Agent',
+                    model: a.m || 'ollama/kimi-k2.6:cloud',
+                    channels: a.c || ['discord']
+                }));
+            } else {
+                addDefaultAgent();
             }
+            renderAgents();
         }
 
         function getFormData() {
-            const modelVal = document.getElementById('model').value;
-            const customModel = document.getElementById('customModel').value.trim();
-
             return {
                 dt: document.getElementById('discordToken').value.trim(),
-                dc: document.getElementById('discordClientId').value.trim(),
+                tt: document.getElementById('telegramToken').value.trim(),
                 ad: document.getElementById('adminId').value.trim(),
                 ex: document.getElementById('extraUsers').value.trim(),
                 gu: document.getElementById('guildId').value.trim(),
                 dm: document.getElementById('allowDMs').checked,
                 gr: document.getElementById('allowGroups').checked,
-                tt: document.getElementById('telegramToken').value.trim(),
-                mo: modelVal === 'custom' && customModel ? customModel : modelVal,
-                an: document.getElementById('agentName').value.trim() || 'NanoBot',
-                wd: document.getElementById('workspaceDir').value.trim() || '~/.openclaw',
                 da: document.getElementById('deviceAuth').checked,
                 np: document.getElementById('nopasswd').checked,
-                as: document.getElementById('autostart').checked
+                as: document.getElementById('autostart').checked,
+                bm: document.getElementById('bindMode').value,
+                ag: agents.map(a => ({
+                    id: a.id,
+                    n: a.name,
+                    m: a.model,
+                    c: a.channels
+                }))
             };
+        }
+
+        function renderAgents() {
+            const container = document.getElementById('agentsList');
+            container.innerHTML = '';
+
+            agents.forEach((agent, index) => {
+                const div = document.createElement('div');
+                div.className = 'agent-card';
+                div.innerHTML = `
+                    <div class="agent-card-header">
+                        <span class="agent-card-title">Agent ${index + 1}</span>
+                        ${agents.length > 1 ? `<button type="button" class="btn btn-danger" onclick="removeAgent(${index})">Remove</button>` : ''}
+                    </div>
+                    <div class="agent-grid">
+                        <div class="form-group">
+                            <label>Agent ID</label>
+                            <input type="text" value="${agent.id}" onchange="updateAgent(${index}, 'id', this.value)" placeholder="main">
+                        </div>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" value="${agent.name}" onchange="updateAgent(${index}, 'name', this.value)" placeholder="NanoBot">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label>Model</label>
+                        <select onchange="updateAgent(${index}, 'model', this.value)">
+                            ${MODELS.map(m => `<option value="${m.id}" ${agent.model === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
+                            <option value="custom" ${!MODELS.find(m => m.id === agent.model) ? 'selected' : ''}>Custom...</option>
+                        </select>
+                    </div>
+                    ${!MODELS.find(m => m.id === agent.model) ? `
+                    <div class="form-group" style="margin-top: 8px;">
+                        <input type="text" value="${agent.model}" onchange="updateAgent(${index}, 'model', this.value)" placeholder="ollama/custom-model:tag">
+                    </div>
+                    ` : ''}
+                    <div style="margin-top: 12px;">
+                        <label>Channels</label>
+                        <div class="channel-tags">
+                            ${['discord', 'telegram', 'webchat', 'slack'].map(ch => `
+                                <label class="channel-tag ${agent.channels.includes(ch) ? 'active' : ''}" onclick="toggleChannel(${index}, '${ch}')">
+                                    <input type="checkbox" ${agent.channels.includes(ch) ? 'checked' : ''}>
+                                    ${ch}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addAgent() {
+            const id = 'agent-' + Math.random().toString(36).substr(2, 5);
+            agents.push({
+                id: id,
+                name: 'Agent' + (agents.length + 1),
+                model: 'ollama/kimi-k2.6:cloud',
+                channels: ['discord']
+            });
+            renderAgents();
+        }
+
+        function removeAgent(index) {
+            agents.splice(index, 1);
+            renderAgents();
+        }
+
+        function updateAgent(index, field, value) {
+            agents[index][field] = value;
+            if (field === 'model') renderAgents(); // re-render to show/hide custom input
+        }
+
+        function toggleChannel(agentIndex, channel) {
+            const agent = agents[agentIndex];
+            if (agent.channels.includes(channel)) {
+                agent.channels = agent.channels.filter(c => c !== channel);
+            } else {
+                agent.channels.push(channel);
+            }
+            renderAgents();
         }
 
         function generate() {
@@ -534,18 +677,14 @@
 
             if (!d.dt) { alert('Discord Bot Token is required'); return; }
             if (!d.ad) { alert('Admin Discord User ID is required'); return; }
+            if (d.ag.length === 0) { alert('Add at least one agent'); return; }
 
-            // Build shareable URL with ALL settings (tokens included)
-            const preset = {
-                dt: d.dt, dc: d.dc, ad: d.ad, ex: d.ex, gu: d.gu,
-                dm: d.dm, gr: d.gr, tt: d.tt, mo: d.mo, an: d.an,
-                wd: d.wd, da: d.da, np: d.np, as: d.as
-            };
-            const hash = encodeURIComponent(btoa(JSON.stringify(preset)));
+            // Build shareable URL with ALL settings
+            const hash = encodeURIComponent(btoa(JSON.stringify(d)));
             const shareUrl = window.location.origin + window.location.pathname + '#' + hash;
             document.getElementById('shareUrl').value = shareUrl;
 
-            // Build one-liner: ultra-compact single paste
+            // Build one-liner
             const envs = [];
             envs.push(`DISCORD_TOKEN='${escapeShell(d.dt)}'`);
             envs.push(`ADMIN_DISCORD_ID='${escapeShell(d.ad)}'`);
@@ -559,22 +698,23 @@
 
             // Update summary
             const parts = [
-                '• Installs Ollama + OpenClaw',
-                `• Configures ${d.an} with ${d.mo}`,
+                `• ${d.ag.length} agent(s): ${d.ag.map(a => a.n).join(', ')}`,
+                `• Models: ${d.ag.map(a => a.m).join(', ')}`,
+                `• Channels: ${[...new Set(d.ag.flatMap(a => a.c))].join(', ')}`,
                 `• Discord: DMs=${d.dm ? 'ON' : 'OFF'}, Groups=${d.gr ? 'ON' : 'OFF'}`,
                 d.gu ? `• Guild lock: ${d.gu}` : '• No guild restriction',
-                d.ex ? `• Extra users: ${d.ex}` : '• No extra whitelisted users',
+                d.ex ? `• Extra users: ${d.ex}` : '',
                 d.tt ? '• Telegram: enabled' : '• Telegram: disabled',
                 d.da ? '• Device auth: DISABLED' : '• Device auth: enabled',
-                d.np ? '• NOPASSWD sudo: enabled' : '• NOPASSWD sudo: disabled',
-                d.as ? '• Auto-start on boot: enabled' : '• Auto-start on boot: disabled'
-            ];
+                d.np ? '• NOPASSWD sudo: enabled' : '',
+                d.as ? '• Auto-start on boot: enabled' : '• Auto-start on boot: disabled',
+                `• Bind mode: ${d.bm}`
+            ].filter(Boolean);
             document.getElementById('summary').innerHTML = parts.join('<br>');
 
             document.getElementById('results').classList.add('show');
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 
-            // Update URL with full preset (including tokens)
             window.history.replaceState(null, '', '#' + hash);
         }
 
@@ -582,17 +722,11 @@
             return str.replace(/'/g, "'\"'\"'");
         }
 
-        function toggleAdvanced() {
-            const sec = document.getElementById('advancedSection');
-            const link = document.getElementById('advLink');
-            const shown = sec.classList.toggle('show');
-            link.textContent = shown ? '⚙️ Hide Advanced Settings' : '⚙️ Show Advanced Settings';
-        }
-
         function resetForm() {
             document.getElementById('configForm').reset();
             document.getElementById('results').classList.remove('show');
-            document.getElementById('customModelGroup').style.display = 'none';
+            agents = [];
+            addDefaultAgent();
             window.location.hash = '';
         }
 
@@ -603,7 +737,7 @@
                 hint.textContent = '✅ Copied!';
                 hint.style.color = 'var(--success)';
                 setTimeout(() => {
-                    hint.textContent = '↑ Click to copy — then paste into your terminal';
+                    hint.textContent = '↑ Click to copy — paste into terminal and hit Enter';
                     hint.style.color = '';
                 }, 2000);
             });

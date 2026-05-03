@@ -234,14 +234,25 @@ EOF
     fi
     
     # Create openclaw.json with gateway.mode=local (required by OpenClaw)
+    # Also supports multi-agent mode with agents.defaults
     if [ ! -f "$workspace/openclaw.json" ]; then
-        cat > "$workspace/openclaw.json" << 'EOF'
+        cat > "$workspace/openclaw.json" << 'JSON'
 {
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace",
+      "model": { "primary": "ollama/kimi-k2.6:cloud" },
+      "sandbox": { "mode": "off" }
+    }
+  },
   "gateway": {
     "mode": "local",
-    "auth": {
-      "mode": "token",
-      "token": "auto-generated-on-first-install"
+    "auth": { "mode": "token", "token": "auto-generated-on-first-install" },
+    "port": 18789,
+    "bind": "loopback",
+    "controlUi": {
+      "dangerouslyDisableDeviceAuth": true,
+      "allowInsecureAuth": true
     }
   },
   "meta": {
@@ -249,8 +260,10 @@ EOF
     "lastTouchedAt": "auto"
   }
 }
-EOF
+JSON
         ok "Gateway mode set to local in ~/.openclaw/openclaw.json"
+        ok "Multi-agent support enabled"
+    fi
     fi
     
     # Write .env template
