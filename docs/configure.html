@@ -1092,6 +1092,17 @@ I read codebases, write tests, and deploy changes.
             set('identityPreset', data.ip || '');
             set('customIdentity', data.ci || '');
 
+            // Model provider restore
+            set('provider', data.pv || 'ollama');
+            set('googleApiKey', data.guk || '');
+            set('googleModel', data.gum || 'gemini-3.1-flash');
+            set('googleModelCustom', data.guc || '');
+            set('anthropicApiKey', data.auk || '');
+            set('anthropicModel', data.aum || 'claude-sonnet-4.6');
+            set('anthropicModelCustom', data.auc || '');
+            set('ollamaBaseUrl', data.obu || 'http://localhost:11434');
+            onProviderChange();
+
             if (data.ip === 'custom' && data.ci) {
                 document.getElementById('customIdentityGroup').style.display = 'block';
                 document.getElementById('identityPreview').style.display = 'block';
@@ -1161,6 +1172,15 @@ I read codebases, write tests, and deploy changes.
                 bm: document.getElementById('bindMode').value,
                 ip: document.getElementById('identityPreset').value,
                 ci: document.getElementById('customIdentity').value.trim(),
+                // Model provider config
+                pv: document.getElementById('provider').value,
+                guk: document.getElementById('googleApiKey').value.trim(),
+                gum: document.getElementById('googleModel').value,
+                guc: document.getElementById('googleModelCustom').value.trim(),
+                auk: document.getElementById('anthropicApiKey').value.trim(),
+                aum: document.getElementById('anthropicModel').value,
+                auc: document.getElementById('anthropicModelCustom').value.trim(),
+                obu: document.getElementById('ollamaBaseUrl').value.trim(),
                 ide: ide,          // integration enabled flags
                 in: Object.keys(inp).length ? inp : undefined,  // integration inputs (only if any set)
                 ag: agents.map(a => ({
