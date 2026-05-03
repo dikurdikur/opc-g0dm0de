@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw God Mode — Quick Configurator</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-input: #21262d;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79b8ff;
+            --success: #3fb950;
+            --warning: #d29922;
+            --danger: #f85149;
+            --code-bg: #21262d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 700px; margin: 0 auto; padding: 0 20px; }
+
+        /* Header */
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 32px 0;
+            text-align: center;
+        }
+
+        .logo { font-size: 40px; margin-bottom: 8px; }
+        h1 { font-size: 26px; font-weight: 600; margin-bottom: 8px; }
+        .tagline { font-size: 15px; color: var(--text-muted); }
+
+        /* Form */
+        main { padding: 32px 0; }
+
+        .section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group:last-child { margin-bottom: 0; }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+        }
+
+        label .required { color: var(--danger); }
+        label .hint {
+            font-weight: 400;
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'SF Mono', Monaco, monospace;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .checkbox-row label {
+            margin: 0;
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .btn-group .btn { width: auto; flex: 1; }
+
+        /* Results */
+        .results {
+            display: none;
+            margin-top: 20px;
+        }
+        .results.show { display: block; }
+
+        .result-box {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .result-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .result-value {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+            word-break: break-all;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .oneliner {
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: all;
+        }
+        .oneliner:hover { background: var(--bg-secondary); }
+        .oneliner:active { background: var(--accent); color: var(--bg); }
+
+        .copy-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        .share-url {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .share-url input {
+            flex: 1;
+        }
+        .share-url button {
+            padding: 10px 16px;
+            white-space: nowrap;
+        }
+
+        /* Toggle advanced */
+        .advanced-toggle {
+            text-align: center;
+            margin: 16px 0;
+        }
+        .advanced-toggle a {
+            color: var(--text-muted);
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .advanced-toggle a:hover { color: var(--accent); }
+
+        .advanced-section {
+            display: none;
+        }
+        .advanced-section.show { display: block; }
+
+        /* Warning */
+        .warning-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--danger);
+            border-left: 4px solid var(--danger);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        .warning-box strong { color: var(--danger); }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 24px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            h1 { font-size: 22px; }
+            .btn-group { flex-direction: column; }
+            .share-url { flex-direction: column; }
+            .share-url button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">⚙️</div>
+            <h1>OpenClaw God Mode — Quick Configurator</h1>
+            <p class="tagline">Fill in your settings. Get a one-liner install command or a shareable preset URL.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="warning-box">
+            <strong>⚠️ DANGER:</strong> This installer grants your AI agent <strong>root-level access</strong> with no approval prompts.
+            Only use on isolated systems. <a href="index.html">Read the full warning →</a>
+        </div>
+
+        <form id="configForm" onsubmit="event.preventDefault(); generate();">
+            <!-- Discord -->
+            <div class="section">
+                <div class="section-title">💬 Discord Bot</div>
+
+                <div class="form-group">
+                    <label>Bot Token <span class="required">*</span> <span class="hint">from discord.com/developers/applications</span></label>
+                    <input type="password" id="discordToken" placeholder="MTI3N..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>Application ID (Client ID) <span class="hint">for invite URL generation</span></label>
+                    <input type="text" id="discordClientId" placeholder="1234567890123456789">
+                </div>
+
+                <div class="form-group">
+                    <label>Your Discord User ID (Admin) <span class="required">*</span> <span class="hint">right-click your name → Copy User ID</span></label>
+                    <input type="text" id="adminId" placeholder="1234567890123456789" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Extra Whitelisted User IDs <span class="hint">comma-separated, optional</span></label>
+                    <input type="text" id="extraUsers" placeholder="9876543210987654321, 1111111111111111111">
+                </div>
+
+                <div class="form-group">
+                    <label>Guild ID (Server Lock) <span class="hint">leave empty to allow any server</span></label>
+                    <input type="text" id="guildId" placeholder="1234567890123456789">
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="allowDMs" checked>
+                    <label for="allowDMs">Allow DMs (whitelisted users only)</label>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="allowGroups" checked>
+                    <label for="allowGroups">Allow Groups (servers)</label>
+                </div>
+            </div>
+
+            <!-- Telegram -->
+            <div class="section">
+                <div class="section-title">📱 Telegram Bot (Optional)</div>
+
+                <div class="form-group">
+                    <label>Bot Token <span class="hint">from @BotFather</span></label>
+                    <input type="password" id="telegramToken" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                </div>
+            </div>
+
+            <!-- Model -->
+            <div class="section">
+                <div class="section-title">🧠 AI Model</div>
+
+                <div class="form-group">
+                    <label>Default Model</label>
+                    <select id="model">
+                        <option value="ollama/kimi-k2.6:cloud">kimi-k2.6:cloud (default)</option>
+                        <option value="llama3.2">llama3.2</option>
+                        <option value="llama3.1:8b">llama3.1:8b</option>
+                        <option value="mistral">mistral</option>
+                        <option value="qwen2.5">qwen2.5</option>
+                        <option value="phi4">phi4</option>
+                        <option value="deepseek-r1:8b">deepseek-r1:8b</option>
+                        <option value="custom">Custom (enter below)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="customModelGroup" style="display:none;">
+                    <label>Custom Model Name</label>
+                    <input type="text" id="customModel" placeholder="model:tag">
+                </div>
+            </div>
+
+            <!-- Advanced -->
+            <div class="advanced-toggle">
+                <a onclick="toggleAdvanced()" id="advLink">⚙️ Show Advanced Settings</a>
+            </div>
+
+            <div class="advanced-section" id="advancedSection">
+                <div class="section">
+                    <div class="section-title">⚙️ Advanced</div>
+
+                    <div class="form-group">
+                        <label>Agent Name</label>
+                        <input type="text" id="agentName" value="NanoBot" placeholder="MyBot">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Workspace Directory</label>
+                        <input type="text" id="workspaceDir" value="~/.openclaw" placeholder="/home/user/.openclaw">
+                    </div>
+
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="deviceAuth" checked>
+                        <label for="deviceAuth">Disable device auth on web UI <span class="hint">(dangerouslyDisableDeviceAuth)</span></label>
+                    </div>
+
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="nopasswd" checked>
+                        <label for="nopasswd">Configure passwordless sudo <span class="hint">(NOPASSWD for automation)</span></label>
+                    </div>
+
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="autostart" checked>
+                        <label for="autostart">Auto-start on boot <span class="hint">(systemd user service)</span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate -->
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">🚀 Generate Install Command</button>
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+            </div>
+        </form>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="section">
+                <div class="section-title">📋 Your Install Command</div>
+                <div class="result-box">
+                    <div class="result-label">Copy & paste into terminal (Linux)</div>
+                    <div class="oneliner" id="oneliner" onclick="copyOneliner()" title="Click to copy"></div>
+                    <div class="copy-hint" id="copyHint">↑ Click to copy — then paste into your terminal</div>
+                </div>
+
+                <div class="result-box">
+                    <div class="result-label">Shareable Preset URL</div>
+                    <div class="share-url">
+                        <input type="text" id="shareUrl" readonly>
+                        <button class="btn btn-secondary" onclick="copyShareUrl()">Copy</button>
+                    </div>
+                    <div class="copy-hint">Bookmark this URL to save your preset. It never stores tokens server-side.</div>
+                </div>
+
+                <div class="result-box">
+                    <div class="result-label">What this command does</div>
+                    <div class="result-value" id="summary">
+                        Clones the repo, sets environment variables, and runs the installer non-interactively.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p><a href="index.html">← Back to main site</a> · <a href="https://github.com/jlaiii/openclaw-god-mode">GitHub</a></p>
+            <p style="margin-top:8px; font-size:11px;">All settings are encoded in the URL. Nothing is sent to any server.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Load from URL hash on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.slice(1);
+            if (hash) {
+                try {
+                    const data = JSON.parse(atob(decodeURIComponent(hash)));
+                    populateForm(data);
+                    generate();
+                } catch(e) {
+                    console.log('No preset in URL');
+                }
+            }
+
+            // Show/hide custom model input
+            document.getElementById('model').addEventListener('change', (e) => {
+                document.getElementById('customModelGroup').style.display =
+                    e.target.value === 'custom' ? 'block' : 'none';
+            });
+        });
+
+        function populateForm(data) {
+            const set = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && val !== undefined) {
+                    if (el.type === 'checkbox') el.checked = !!val;
+                    else el.value = val;
+                }
+            };
+
+            set('discordToken', data.dt);
+            set('discordClientId', data.dc);
+            set('adminId', data.ad);
+            set('extraUsers', data.ex);
+            set('guildId', data.gu);
+            set('allowDMs', data.dm);
+            set('allowGroups', data.gr);
+            set('telegramToken', data.tt);
+            set('model', data.mo);
+            set('customModel', data.cm);
+            set('agentName', data.an);
+            set('workspaceDir', data.wd);
+            set('deviceAuth', data.da);
+            set('nopasswd', data.np);
+            set('autostart', data.as);
+
+            if (data.mo === 'custom') {
+                document.getElementById('customModelGroup').style.display = 'block';
+            }
+        }
+
+        function getFormData() {
+            const modelVal = document.getElementById('model').value;
+            const customModel = document.getElementById('customModel').value.trim();
+
+            return {
+                dt: document.getElementById('discordToken').value.trim(),
+                dc: document.getElementById('discordClientId').value.trim(),
+                ad: document.getElementById('adminId').value.trim(),
+                ex: document.getElementById('extraUsers').value.trim(),
+                gu: document.getElementById('guildId').value.trim(),
+                dm: document.getElementById('allowDMs').checked,
+                gr: document.getElementById('allowGroups').checked,
+                tt: document.getElementById('telegramToken').value.trim(),
+                mo: modelVal === 'custom' && customModel ? customModel : modelVal,
+                an: document.getElementById('agentName').value.trim() || 'NanoBot',
+                wd: document.getElementById('workspaceDir').value.trim() || '~/.openclaw',
+                da: document.getElementById('deviceAuth').checked,
+                np: document.getElementById('nopasswd').checked,
+                as: document.getElementById('autostart').checked
+            };
+        }
+
+        function generate() {
+            const d = getFormData();
+
+            if (!d.dt) { alert('Discord Bot Token is required'); return; }
+            if (!d.ad) { alert('Admin Discord User ID is required'); return; }
+
+            // Build shareable URL (base64 JSON in hash)
+            const preset = {
+                dt: '', dc: d.dc, ad: d.ad, ex: d.ex, gu: d.gu,
+                dm: d.dm, gr: d.gr, tt: '', mo: d.mo, an: d.an,
+                wd: d.wd, da: d.da, np: d.np, as: d.as
+            };
+            const hash = encodeURIComponent(btoa(JSON.stringify(preset)));
+            const shareUrl = window.location.origin + window.location.pathname + '#' + hash;
+            document.getElementById('shareUrl').value = shareUrl;
+
+            // Build one-liner
+            const envs = [];
+            envs.push(`DISCORD_TOKEN='${escapeShell(d.dt)}'`);
+            envs.push(`ADMIN_DISCORD_ID='${escapeShell(d.ad)}'`);
+            if (d.ex) envs.push(`DISCORD_EXTRA_USERS='${escapeShell(d.ex)}'`);
+            if (d.gu) envs.push(`DISCORD_GUILD_ID='${escapeShell(d.gu)}'`);
+            if (d.tt) envs.push(`TELEGRAM_TOKEN='${escapeShell(d.tt)}'`);
+
+            const oneliner = `export ${envs.join(' ')} && \\
+  git clone https://github.com/jlaiii/openclaw-god-mode.git /tmp/openclaw-god-mode && \\
+  cd /tmp/openclaw-god-mode/linux && \\
+  chmod +x install.sh && \\
+  ./install.sh`;
+
+            document.getElementById('oneliner').textContent = oneliner;
+
+            // Update summary
+            const parts = [
+                '• Installs Ollama + OpenClaw',
+                `• Configures ${d.an} with ${d.mo}`,
+                `• Discord: DMs=${d.dm ? 'ON' : 'OFF'}, Groups=${d.gr ? 'ON' : 'OFF'}`,
+                d.gu ? `• Guild lock: ${d.gu}` : '• No guild restriction',
+                d.ex ? `• Extra users: ${d.ex}` : '• No extra whitelisted users',
+                d.tt ? '• Telegram: enabled' : '• Telegram: disabled',
+                d.da ? '• Device auth: DISABLED' : '• Device auth: enabled',
+                d.np ? '• NOPASSWD sudo: enabled' : '• NOPASSWD sudo: disabled',
+                d.as ? '• Auto-start on boot: enabled' : '• Auto-start on boot: disabled'
+            ];
+            document.getElementById('summary').innerHTML = parts.join('<br>');
+
+            document.getElementById('results').classList.add('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+            // Update URL without reload (only non-sensitive data)
+            window.history.replaceState(null, '', '#' + hash);
+        }
+
+        function escapeShell(str) {
+            return str.replace(/'/g, "'\"'\"'");
+        }
+
+        function toggleAdvanced() {
+            const sec = document.getElementById('advancedSection');
+            const link = document.getElementById('advLink');
+            const shown = sec.classList.toggle('show');
+            link.textContent = shown ? '⚙️ Hide Advanced Settings' : '⚙️ Show Advanced Settings';
+        }
+
+        function resetForm() {
+            document.getElementById('configForm').reset();
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('customModelGroup').style.display = 'none';
+            window.location.hash = '';
+        }
+
+        function copyOneliner() {
+            const text = document.getElementById('oneliner').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const hint = document.getElementById('copyHint');
+                hint.textContent = '✅ Copied!';
+                hint.style.color = 'var(--success)';
+                setTimeout(() => {
+                    hint.textContent = '↑ Click to copy — then paste into your terminal';
+                    hint.style.color = '';
+                }, 2000);
+            });
+        }
+
+        function copyShareUrl() {
+            const el = document.getElementById('shareUrl');
+            navigator.clipboard.writeText(el.value).then(() => {
+                el.style.borderColor = 'var(--success)';
+                setTimeout(() => { el.style.borderColor = ''; }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>
