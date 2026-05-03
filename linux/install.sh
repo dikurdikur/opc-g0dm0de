@@ -366,12 +366,32 @@ EOF
 }
 
 # ─── Prompt for Tokens and Whitelist ───
+# Only asks for tokens that are actually needed based on enabled channels
 prompt_config() {
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  OpenClaw God Mode — Configuration"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
+    
+    # Detect which channels are enabled from AGENTS_JSON
+    local discord_needed=false
+    local telegram_needed=false
+    if [ -n "${AGENTS_JSON:-}" ]; then
+        # Parse channels from agent config using node
+        local detected_channels
+        detected_channels="$(echo "$AGENTS_JSON" | node -e '
+const agents = JSON.parse(require("fs").readFileSync(0, "utf8"));
+const allCh = new Set(agents.flatMap(a => a.c || []));
+console.log(Array.from(allCh).join(" "));
+' 2>/dev/null || echo "")"
+        if echo "$detected_channels" | grep -qw "discord"; then
+            discord_needed=true
+        fi
+        if echo "$detected_channels" | grep -qw "telegram"; then
+            telegram_needed=true
+        fi
+    fi
     
     # Check if running non-interactively (no TTY)
     local non_interactive=false
@@ -386,36 +406,36 @@ prompt_config() {
     guild_id="${DISCORD_GUILD_ID:-}"
     local extra_users="${DISCORD_EXTRA_USERS:-}"
     
-    if [ "$non_interactive" = true ] && [ -z "$discord_token" ]; then
-        warn "Non-interactive mode: no TTY detected. Set DISCORD_TOKEN env var to auto-configure."
-        warn "Continuing with placeholder config. You MUST edit ~/.openclaw/config/gateway.yaml manually."
+    # Only warn about missing Discord token if Discord is actually needed
+    if [ "$non_interactive" = true ] && [ "$discord_needed" = true ] && [ -z "$discord_token" ]; then
+        warn "Non-interactive mode: Discord token required but DISCORD_TOKEN not set."
+        warn "Continuing with placeholder. You MUST edit ~/.openclaw/config/gateway.yaml manually."
         discord_token="YOUR_DISCORD_BOT_TOKEN"
         admin_id="${admin_id:-YOUR_ADMIN_ID}"
         guild_id="${guild_id:-}"
     fi
     
-    # Only prompt if not already set via env vars AND interactive
+    # Only prompt if interactive
     if [ "$non_interactive" = true ]; then
         ok "Non-interactive mode — skipping prompts. Using env vars or defaults."
-        # Set defaults for anything missing
-        [ -z "$discord_token" ] && discord_token="YOUR_DISCORD_BOT_TOKEN"
-        [ -z "$admin_id" ] && admin_id="YOUR_ADMIN_ID"
+        [ -z "$discord_token" ] && discord_token=""
+        [ -z "$admin_id" ] && admin_id=""
     else
-        if [ -z "$discord_token" ]; then
+        if [ "$discord_needed" = true ] && [ -z "$discord_token" ]; then
             read -rp "Discord Bot Token: " discord_token
-        else
+        elif [ "$discord_needed" = true ]; then
             ok "Discord token provided via DISCORD_TOKEN environment variable"
         fi
         
-        if [ -z "$telegram_token" ]; then
-            read -rp "Telegram Bot Token (leave blank to skip): " telegram_token
-        else
+        if [ "$telegram_needed" = true ] && [ -z "$telegram_token" ]; then
+            read -rp "Telegram Bot Token: " telegram_token
+        elif [ "$telegram_needed" = true ]; then
             ok "Telegram token provided via TELEGRAM_TOKEN environment variable"
         fi
         
-        if [ -z "$admin_id" ]; then
+        if [ "$discord_needed" = true ] && [ -z "$admin_id" ]; then
             read -rp "Your Discord User ID (admin/owner): " admin_id
-        else
+        elif [ "$discord_needed" = true ]; then
             ok "Admin ID provided via ADMIN_DISCORD_ID environment variable"
         fi
     fi
@@ -447,13 +467,13 @@ prompt_config() {
     
     if [ "$non_interactive" = true ] && [ -z "$guild_id" ]; then
         ok "Non-interactive mode — guild ID left empty (any server allowed)"
-    elif [ -z "$guild_id" ]; then
+    elif [ -z "$guild_id" ] && [ "$discord_needed" = true ]; then
         read -rp "Discord Guild ID to whitelist (leave blank for any server): " guild_id
-    else
+    elif [ -n "$guild_id" ]; then
         ok "Guild ID provided via DISCORD_GUILD_ID environment variable"
     fi
     
-    # Write to .env
+    # Write to .env — only include vars that are actually set
     local env_file="$HOME/.openclaw/.env"
     {
         echo "# Updated by OpenClaw God Mode"
@@ -466,10 +486,11 @@ prompt_config() {
     # Update config with values
     local config_file="$HOME/.openclaw/config/gateway.yaml"
     
-    if [ -n "$discord_token" ]; then
+    # Only inject Discord config if discord is needed
+    if [ "$discord_needed" = true ] && [ -n "$discord_token" ]; then
         sed -i "s|\${DISCORD_TOKEN}|$discord_token|" "$config_file"
     fi
-    if [ -n "$telegram_token" ]; then
+    if [ "$telegram_needed" = true ] && [ -n "$telegram_token" ]; then
         sed -i "s|\${TELEGRAM_TOKEN}|$telegram_token|" "$config_file"
     fi
     if [ ${#whitelist[@]} -gt 0 ]; then
@@ -485,11 +506,13 @@ prompt_config() {
     ok "Configuration saved!"
     
     # Show whitelist summary
-    echo ""
-    echo "  Whitelisted users for DMs: ${whitelist[*]:-(none)}"
-    echo "  Guild restriction: ${guild_id:-(any server)}"
-    echo "  Groups: enabled for all servers"
-    echo ""
+    if [ "$discord_needed" = true ]; then
+        echo ""
+        echo "  Whitelisted users for DMs: ${whitelist[*]:-(none)}"
+        echo "  Guild restriction: ${guild_id:-(any server)}"
+        echo "  Groups: enabled for all servers"
+        echo ""
+    fi
 }
 
 # ─── Print Discord Setup Helper ───
