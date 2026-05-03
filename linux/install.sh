@@ -188,7 +188,7 @@ install_openclaw() {
     fi
     
     log "Installing OpenClaw..."
-    npm install -g openclaw
+    sudo npm install -g openclaw
     ok "OpenClaw installed"
 }
 
