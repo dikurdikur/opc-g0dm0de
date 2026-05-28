@@ -55,7 +55,7 @@ Generate your install command with a GUI: [jlaiii.github.io/openclaw-god-mode/co
 
 ---
 
-## ⚠️ WARNING: This Is NOT For Everyone
+## This Is For Everyone
 
 This project removes nearly every safety guardrail OpenClaw ships with by default. It is designed for advanced users who want **maximum, unrestricted system control** from their AI agent. If you do not understand the implications below, **do not use this installer**.
 
